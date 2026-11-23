@@ -172,8 +172,9 @@ if(EDGEDROP_BUILD_DESKTOP)
         Qml
         Quick
         QuickControls2
-        QuickEffects
         Widgets
+        OPTIONAL_COMPONENTS
+        QuickEffects
     )
 
     set(CMAKE_AUTOMOC ON)
@@ -210,9 +211,11 @@ if(EDGEDROP_BUILD_DESKTOP)
         Qt6::Core
         Qt6::Gui
         Qt6::Quick
-        Qt6::QuickEffects
         Qt6::Widgets
     )
+    if(TARGET Qt6::QuickEffects)
+        target_link_libraries(edgedrop_desktop_lib PUBLIC Qt6::QuickEffects)
+    endif()
     if(APPLE)
         target_link_libraries(edgedrop_desktop_lib PUBLIC
             "-framework Cocoa"
@@ -271,9 +274,11 @@ if(EDGEDROP_BUILD_DESKTOP)
         Qt6::Qml
         Qt6::Quick
         Qt6::QuickControls2
-        Qt6::QuickEffects
         Qt6::Widgets
     )
+    if(TARGET Qt6::QuickEffects)
+        target_link_libraries(edgedrop PRIVATE Qt6::QuickEffects)
+    endif()
 
     if(APPLE)
         target_link_options(edgedrop PRIVATE "-Wl,-dead_strip_dylibs")

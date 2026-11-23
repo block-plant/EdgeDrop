@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">EdgeDrop</string>
+    <string name="overlay_service_name">EdgeDrop Floating Edge Notch</string>
+    <string name="notification_title">EdgeDrop is running</string>
+    <string name="notification_text">Tap the screen edge to shrink any file offline</string>
+    <string name="action_hide_notch">Hide Notch</string>
+    <string name="action_show_notch">Show Notch</string>
+    <string name="action_stop_service">Stop</string>
+</resources>

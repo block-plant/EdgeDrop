@@ -59,13 +59,24 @@ jobs:
       - name: Install Qt & Dependencies
         uses: jurplel/install-qt-action@v3
         with:
-          version: '6.6.2'
+          version: '6.8.3'
           host: 'windows'
           target: 'desktop'
-          arch: 'win64_msvc2019_64'
+          arch: 'win64_msvc2022_64'
+          modules: 'qtshadertools'
 
       - name: Setup NSIS
         uses: nsis-dev/setup-nsis@v1
+
+      - name: Cache vcpkg binary archives
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/AppData/Local/vcpkg/archives
+            C:\Users\runneradmin\AppData\Local\vcpkg\archives
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json', 'packaging/windows/triplets/**') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
 
       - name: Configure CMake
         shell: pwsh
@@ -75,7 +86,8 @@ jobs:
             -DEDGEDROP_BUILD_TESTS=ON `
             -DEDGEDROP_BUILD_DESKTOP=ON `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET=x64-windows `
+            -DVCPKG_OVERLAY_TRIPLETS="${{ github.workspace }}/packaging/windows/triplets" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows-release `
             -DCMAKE_PREFIX_PATH="$env:Qt6_DIR"
 
       - name: Build
@@ -93,8 +105,14 @@ jobs:
           $exePath = "build/Release/EdgeDrop.exe"
           if (-not (Test-Path $exePath)) { $exePath = "build/Release/edgedrop.exe" }
           windeployqt --qmldir desktop/qml --release $exePath
+          if (Test-Path "build/vcpkg_installed/x64-windows-release/bin") {
+            Copy-Item "build/vcpkg_installed/x64-windows-release/bin/*.dll" "build/Release/" -Force
+          }
           if (Test-Path "build/vcpkg_installed/x64-windows/bin") {
             Copy-Item "build/vcpkg_installed/x64-windows/bin/*.dll" "build/Release/" -Force
+          }
+          if (Test-Path "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows-release/bin") {
+            Copy-Item "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows-release/bin/*.dll" "build/Release/" -Force
           }
           if (Test-Path "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin") {
             Copy-Item "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin/*.dll" "build/Release/" -Force
