@@ -51,7 +51,7 @@ jobs:
 
   build-windows:
     name: Build Windows Installer (NSIS x64)
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -64,23 +64,44 @@ jobs:
           target: 'desktop'
           arch: 'win64_msvc2019_64'
 
+      - name: Setup NSIS
+        uses: nsis-dev/setup-nsis@v1
+
       - name: Configure CMake
+        shell: pwsh
         run: |
           cmake -B build `
             -DCMAKE_BUILD_TYPE=Release `
             -DEDGEDROP_BUILD_TESTS=ON `
-            -DEDGEDROP_BUILD_DESKTOP=ON
+            -DEDGEDROP_BUILD_DESKTOP=ON `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows `
+            -DCMAKE_PREFIX_PATH="$env:Qt6_DIR"
 
       - name: Build
+        shell: pwsh
         run: cmake --build build --config Release
 
       - name: Run Tests
+        shell: pwsh
         run: ctest --test-dir build --output-on-failure -C Release
 
       - name: Package NSIS Installer
-        shell: bash
+        shell: pwsh
         run: |
-          mkdir -p dist
+          New-Item -ItemType Directory -Force -Path dist
+          $exePath = "build/Release/EdgeDrop.exe"
+          if (-not (Test-Path $exePath)) { $exePath = "build/Release/edgedrop.exe" }
+          windeployqt --qmldir desktop/qml --release $exePath
+          if (Test-Path "build/vcpkg_installed/x64-windows/bin") {
+            Copy-Item "build/vcpkg_installed/x64-windows/bin/*.dll" "build/Release/" -Force
+          }
+          if (Test-Path "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin") {
+            Copy-Item "$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin/*.dll" "build/Release/" -Force
+          }
+          if ((Test-Path "build/Release/edgedrop.exe") -and -not (Test-Path "build/Release/EdgeDrop.exe")) {
+            Copy-Item "build/Release/edgedrop.exe" "build/Release/EdgeDrop.exe"
+          }
           makensis packaging/windows/installer.nsi
 
       - name: Upload Windows Artifact
@@ -103,7 +124,11 @@ jobs:
             build-essential cmake ninja-build \
             libgl1-mesa-dev libx11-dev \
             libopencv-dev libqpdf-dev nlohmann-json3-dev zlib1g-dev \
-            qt6-base-dev qt6-declarative-dev qt6-quickcontrols2-5-dev
+            qt6-base-dev qt6-declarative-dev \
+            qml6-module-qtquick qml6-module-qtquick-controls \
+            qml6-module-qtquick-layouts qml6-module-qtquick-window \
+            qml6-module-qtquick-templates qml6-module-qtquick-effects \
+            qml6-module-qtquick-dialogs
 
       - name: Configure CMake
         run: |
@@ -120,6 +145,7 @@ jobs:
 
       - name: Package AppImage
         run: |
+          export APPIMAGE_EXTRACT_AND_RUN=1
           chmod +x packaging/linux/create_appimage.sh
           ./packaging/linux/create_appimage.sh
 

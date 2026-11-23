@@ -91,14 +91,21 @@ if(NOT nlohmann_json_FOUND)
     find_package(nlohmann_json REQUIRED)
 endif()
 
-find_library(QPDF_LIB qpdf
-    HINTS "/opt/homebrew/opt/qpdf/lib" "/usr/local/opt/qpdf/lib"
-    REQUIRED
-)
-find_path(QPDF_INCLUDE_DIR qpdf/QPDF.hh
-    HINTS "/opt/homebrew/opt/qpdf/include" "/usr/local/opt/qpdf/include"
-    REQUIRED
-)
+find_package(qpdf CONFIG QUIET)
+if(TARGET qpdf::libqpdf)
+    set(QPDF_LIB qpdf::libqpdf)
+elseif(TARGET qpdf::qpdf)
+    set(QPDF_LIB qpdf::qpdf)
+else()
+    find_library(QPDF_LIB NAMES qpdf libqpdf
+        HINTS "/opt/homebrew/opt/qpdf/lib" "/usr/local/opt/qpdf/lib"
+        REQUIRED
+    )
+    find_path(QPDF_INCLUDE_DIR qpdf/QPDF.hh
+        HINTS "/opt/homebrew/opt/qpdf/include" "/usr/local/opt/qpdf/include"
+        REQUIRED
+    )
+endif()
 
 find_package(ZLIB REQUIRED)
 
@@ -132,8 +139,10 @@ target_include_directories(edgedrop_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/core/src
     ${CMAKE_CURRENT_SOURCE_DIR}/core/src/legacy
     ${OpenCV_INCLUDE_DIRS}
-    ${QPDF_INCLUDE_DIR}
 )
+if(QPDF_INCLUDE_DIR)
+    target_include_directories(edgedrop_core PUBLIC ${QPDF_INCLUDE_DIR})
+endif()
 
 target_link_libraries(edgedrop_core PUBLIC
     opencv_core
@@ -214,6 +223,10 @@ if(EDGEDROP_BUILD_DESKTOP)
     qt_add_executable(edgedrop
         ${DESKTOP_SRC_DIR}/main.cpp
     )
+
+    if(WIN32)
+        set_target_properties(edgedrop PROPERTIES OUTPUT_NAME "EdgeDrop")
+    endif()
 
     set_source_files_properties(desktop/qml/Theme.qml
         PROPERTIES

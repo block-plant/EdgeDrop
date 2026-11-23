@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Ensure AppImage binaries run without FUSE requirement on headless CI
+export APPIMAGE_EXTRACT_AND_RUN=1
+
 # EdgeDrop Linux Standalone AppImage Packaging Script
 # Packages binary, desktop entry, SVG icon, and Qt libraries via linuxdeploy
 
