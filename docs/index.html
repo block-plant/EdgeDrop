@@ -71,7 +71,7 @@
         <div class="hero-copy">
           <div class="eyebrow-badge">
             <span class="eyebrow-dot"></span>
-            <span>v1.0.0 &middot; 100% Offline &middot; macOS, Windows &amp; Linux</span>
+            <span id="release-tag-text">v1.0.0 &middot; 100% Offline &middot; macOS, Windows, Linux &amp; Android</span>
           </div>
 
           <h1 class="hero-headline">Drop a file.<br>Pick a size. Done.</h1>
@@ -83,7 +83,7 @@
           <!-- Smart OS-Aware Download Block -->
           <div class="download-block" id="download-block">
             <!-- Populated dynamically via app.js -->
-            <a href="https://github.com/block-plant/edgedrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg" id="primary-cta-btn" class="primary-btn">
+            <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg" id="primary-cta-btn" class="primary-btn">
               <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
               </svg>
@@ -91,7 +91,7 @@
               <span class="btn-subtext" id="primary-cta-subtext">Apple Silicon &middot; .dmg</span>
             </a>
 
-            <!-- Mobile notice container (active on iOS/Android) -->
+            <!-- Mobile notice container (active on iOS) -->
             <div id="mobile-notice-box" class="mobile-notice-box" style="display: none;">
               <p class="mobile-notice-text">
                 EdgeDrop is a desktop app for macOS, Windows &amp; Linux. Select an installer below or copy this link to open on your computer:
@@ -108,19 +108,21 @@
             <!-- Secondary Links Row -->
             <div class="secondary-downloads" id="secondary-downloads">
               <span class="sec-label">Direct downloads:</span>
-              <a href="https://github.com/block-plant/edgedrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg" class="sec-link" id="link-mac">macOS</a>
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg" class="sec-link" id="link-mac">macOS</a>
               <span class="sec-sep">&middot;</span>
-              <a href="https://github.com/block-plant/edgedrop/releases/latest/download/EdgeDrop-Windows-x64.exe" class="sec-link" id="link-win">Windows</a>
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64.exe" class="sec-link" id="link-win">Windows</a>
               <span class="sec-sep">&middot;</span>
-              <a href="https://github.com/block-plant/edgedrop/releases/latest/download/EdgeDrop-Windows-x64-Portable.zip" class="sec-link" id="link-portable">Portable .zip</a>
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64-Portable.zip" class="sec-link" id="link-portable">Portable .zip</a>
               <span class="sec-sep">&middot;</span>
-              <a href="https://github.com/block-plant/edgedrop/releases/latest/download/EdgeDrop-Linux-x86_64.AppImage" class="sec-link" id="link-linux">Linux</a>
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Linux-x86_64.AppImage" class="sec-link" id="link-linux">Linux</a>
               <span class="sec-sep">&middot;</span>
-              <a href="https://github.com/block-plant/edgedrop/releases/latest/download/SHA256SUMS.txt" class="sec-link" id="link-checksums">SHA256</a>
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Android.apk" class="sec-link" id="link-android">Android</a>
+              <span class="sec-sep">&middot;</span>
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS.txt" class="sec-link" id="link-checksums">SHA256</a>
             </div>
 
             <p class="reassurance-text">
-              Free &amp; open source &middot; No account &middot; No uploads &middot; No admin rights required
+              Free &amp; open source &middot; No account &middot; No uploads &middot; <a href="#first-launch-guide" class="sec-link">First-launch tip</a>
             </p>
           </div>
         </div>
@@ -458,7 +460,7 @@
     <!-- ======================================================================= -->
     <section class="section-notice" id="guide">
       <div class="layout-container">
-        <div class="callout-card">
+        <div class="callout-card" id="first-launch-guide">
           <div class="callout-header">
             <div class="callout-icon-wrap">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -480,6 +482,7 @@
             <button class="notice-tab active" data-os="mac" role="tab" aria-selected="true">macOS (Gatekeeper)</button>
             <button class="notice-tab" data-os="win" role="tab" aria-selected="false">Windows (SmartScreen)</button>
             <button class="notice-tab" data-os="linux" role="tab" aria-selected="false">Linux (Permissions)</button>
+            <button class="notice-tab" data-os="android" role="tab" aria-selected="false">Android (Install)</button>
           </div>
 
           <div class="notice-tab-content">
@@ -515,6 +518,17 @@
                 <li>Launch via <code>./EdgeDrop-*.AppImage</code> or double-click in your desktop environment.</li>
               </ol>
             </div>
+
+            <div class="notice-panel" id="notice-panel-android">
+              <p class="notice-instruction-text">
+                Android may display <em>&ldquo;File might be harmful&rdquo;</em> or ask for permission to install apps outside Google Play:
+              </p>
+              <ol class="notice-steps">
+                <li>Tap <strong>Download anyway</strong> in the browser prompt.</li>
+                <li>Open the downloaded <strong>.apk</strong> from notifications or your Downloads folder.</li>
+                <li>When prompted, tap <strong>Settings</strong> &rarr; enable <strong>&ldquo;Allow from this source&rdquo;</strong>, then tap <strong>Install</strong>.</li>
+              </ol>
+            </div>
           </div>
 
           <div class="callout-footer">
@@ -545,18 +559,19 @@
       <div class="footer-links-col">
         <div class="footer-links-group">
           <span class="footer-group-title">Downloads</span>
-          <a href="https://github.com/block-plant/edgedrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg">macOS (.dmg)</a>
-          <a href="https://github.com/block-plant/edgedrop/releases/latest/download/EdgeDrop-Windows-x64.exe">Windows (.exe)</a>
-          <a href="https://github.com/block-plant/edgedrop/releases/latest/download/EdgeDrop-Windows-x64-Portable.zip">Windows (.zip)</a>
-          <a href="https://github.com/block-plant/edgedrop/releases/latest/download/EdgeDrop-Linux-x86_64.AppImage">Linux (.AppImage)</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg" id="footer-link-mac">macOS (.dmg)</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64.exe" id="footer-link-win">Windows (.exe)</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64-Portable.zip" id="footer-link-portable">Windows (.zip)</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Linux-x86_64.AppImage" id="footer-link-linux">Linux (.AppImage)</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Android.apk" id="footer-link-android">Android (.apk)</a>
         </div>
 
         <div class="footer-links-group">
           <span class="footer-group-title">Integrity &amp; Code</span>
-          <a href="https://github.com/block-plant/edgedrop/releases/latest/download/SHA256SUMS.txt">SHA256SUMS.txt</a>
-          <a href="https://github.com/block-plant/edgedrop/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">Security Policy</a>
-          <a href="https://github.com/block-plant/edgedrop/releases" target="_blank" rel="noopener noreferrer">All Releases</a>
-          <a href="https://github.com/block-plant/edgedrop" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS.txt" id="footer-link-checksums">SHA256SUMS.txt</a>
+          <a href="https://github.com/block-plant/EdgeDrop/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">Security Policy</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases" target="_blank" rel="noopener noreferrer">All Releases</a>
+          <a href="https://github.com/block-plant/EdgeDrop" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
         </div>
       </div>
     </div>

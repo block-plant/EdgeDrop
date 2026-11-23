@@ -38,7 +38,7 @@
 
   initTheme();
 
-  // ── 2. Smart OS Detection & Download CTA Setup ───────────────────────────
+  // ── 2. Smart OS Detection & Dynamic GitHub Release Download Setup ─────────
 
   const primaryBtn = document.getElementById('primary-cta-btn');
   const primaryLabel = document.getElementById('primary-cta-label');
@@ -47,19 +47,74 @@
   const copyPageLinkBtn = document.getElementById('copy-page-link-btn');
   const copyLinkText = document.getElementById('copy-link-text');
   const checksumCommandCode = document.getElementById('checksum-command-code');
+  const releaseTagText = document.getElementById('release-tag-text');
 
-  const RELEASE_BASE = 'https://github.com/block-plant/edgedrop/releases/latest/download';
-  const URL_MAC = `${RELEASE_BASE}/EdgeDrop-macOS-arm64.dmg`;
-  const URL_WIN = `${RELEASE_BASE}/EdgeDrop-Windows-x64.exe`;
-  const URL_WIN_PORTABLE = `${RELEASE_BASE}/EdgeDrop-Windows-x64-Portable.zip`;
-  const URL_LINUX = `${RELEASE_BASE}/EdgeDrop-Linux-x86_64.AppImage`;
+  const linkMac = document.getElementById('link-mac');
+  const linkWin = document.getElementById('link-win');
+  const linkPortable = document.getElementById('link-portable');
+  const linkLinux = document.getElementById('link-linux');
+  const linkAndroid = document.getElementById('link-android');
+  const linkChecksums = document.getElementById('link-checksums');
+
+  const footerLinkMac = document.getElementById('footer-link-mac');
+  const footerLinkWin = document.getElementById('footer-link-win');
+  const footerLinkPortable = document.getElementById('footer-link-portable');
+  const footerLinkLinux = document.getElementById('footer-link-linux');
+  const footerLinkAndroid = document.getElementById('footer-link-android');
+  const footerLinkChecksums = document.getElementById('footer-link-checksums');
+
+  const GITHUB_REPO = 'block-plant/EdgeDrop';
+  const RELEASES_API = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+  const FALLBACK_RELEASES_PAGE = `https://github.com/${GITHUB_REPO}/releases/latest`;
+  const RELEASE_BASE = `https://github.com/${GITHUB_REPO}/releases/latest/download`;
+  const CACHE_KEY = 'edgedrop_release_cache_v1';
+  const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+  const FALLBACK_ASSETS = {
+    mac: {
+      url: `${RELEASE_BASE}/EdgeDrop-macOS-arm64.dmg`,
+      name: 'EdgeDrop-macOS-arm64.dmg',
+      label: 'Download for macOS',
+      subtext: 'Apple Silicon · .dmg'
+    },
+    win: {
+      url: `${RELEASE_BASE}/EdgeDrop-Windows-x64.exe`,
+      name: 'EdgeDrop-Windows-x64.exe',
+      label: 'Download for Windows',
+      subtext: 'Windows 10/11 x64 · .exe'
+    },
+    winPortable: {
+      url: `${RELEASE_BASE}/EdgeDrop-Windows-x64-Portable.zip`,
+      name: 'EdgeDrop-Windows-x64-Portable.zip',
+      label: 'Portable .zip',
+      subtext: 'Windows x64 · Portable'
+    },
+    linux: {
+      url: `${RELEASE_BASE}/EdgeDrop-Linux-x86_64.AppImage`,
+      name: 'EdgeDrop-Linux-x86_64.AppImage',
+      label: 'Download for Linux',
+      subtext: 'x86_64 · .AppImage'
+    },
+    android: {
+      url: `${RELEASE_BASE}/EdgeDrop-Android.apk`,
+      name: 'EdgeDrop-Android.apk',
+      label: 'Download for Android',
+      subtext: 'ARM64 & x86_64 · .apk'
+    },
+    checksums: {
+      url: `${RELEASE_BASE}/SHA256SUMS.txt`,
+      name: 'SHA256SUMS.txt'
+    }
+  };
 
   function detectClientOS() {
-    const ua = navigator.userAgent || '';
     const platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+    const ua = navigator.userAgent || '';
 
-    // Mobile platforms
-    if (/android/i.test(ua)) return 'android';
+    // Android
+    if (/android/i.test(platform) || /android/i.test(ua)) return 'android';
+
+    // iOS mobile devices
     if (/ipad|iphone|ipod/i.test(ua) || (platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
 
     // Desktop platforms
@@ -67,51 +122,217 @@
     if (/win/i.test(platform) || /windows/i.test(ua)) return 'win';
     if (/linux/i.test(platform) || /linux/i.test(ua)) return 'linux';
 
-    return 'unknown';
+    return 'mac';
   }
 
-  function setupDownloadCTA() {
-    const os = detectClientOS();
+  function formatBytes(bytes) {
+    if (!bytes || isNaN(bytes)) return '';
+    const mb = bytes / (1024 * 1024);
+    if (mb >= 1) return `${mb.toFixed(1)} MB`;
+    const kb = bytes / 1024;
+    return `${kb.toFixed(0)} KB`;
+  }
 
-    if (os === 'ios' || os === 'android') {
+  function parseReleaseData(data) {
+    if (!data || typeof data !== 'object') return null;
+    const assets = Array.isArray(data.assets) ? data.assets : [];
+    const parsed = {
+      tagName: data.tag_name || 'v1.0.0',
+      htmlUrl: data.html_url || FALLBACK_RELEASES_PAGE,
+      assets: {}
+    };
+
+    for (const asset of assets) {
+      const name = asset.name || '';
+      const lower = name.toLowerCase();
+      const url = asset.browser_download_url;
+      if (!url) continue;
+      const size = formatBytes(asset.size);
+      const item = { url, name, size };
+
+      if (lower.endsWith('.dmg') && !parsed.assets.mac) {
+        parsed.assets.mac = item;
+      } else if (lower.endsWith('.exe') && !parsed.assets.win) {
+        parsed.assets.win = item;
+      } else if (lower.includes('portable') && lower.endsWith('.zip') && !parsed.assets.winPortable) {
+        parsed.assets.winPortable = item;
+      } else if (lower.endsWith('.appimage') && !parsed.assets.linux) {
+        parsed.assets.linux = item;
+      } else if (lower.endsWith('.apk') && !parsed.assets.android) {
+        parsed.assets.android = item;
+      } else if (lower.includes('sha256sums') && !parsed.assets.checksums) {
+        parsed.assets.checksums = item;
+      }
+    }
+
+    return parsed;
+  }
+
+  function getCachedRelease() {
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const cached = JSON.parse(raw);
+      if (Date.now() - cached.timestamp < CACHE_TTL_MS && cached.data) {
+        return cached.data;
+      }
+    } catch {
+      // sessionStorage unavailable/disabled
+    }
+    return null;
+  }
+
+  function setCachedRelease(data) {
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+        timestamp: Date.now(),
+        data: data
+      }));
+    } catch {
+      // Ignore quota or disabled storage errors
+    }
+  }
+
+  async function fetchLatestRelease() {
+    const cached = getCachedRelease();
+    if (cached) return cached;
+
+    try {
+      const res = await fetch(RELEASES_API, {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+      });
+      if (!res.ok) return null;
+      const json = await res.json();
+      const parsed = parseReleaseData(json);
+      if (parsed) {
+        setCachedRelease(parsed);
+      }
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  function setLinkTarget(el, url) {
+    if (!el || !url) return;
+    el.href = url;
+    // Direct downloads trigger download in same window; HTML release pages open in new tab
+    if (url === FALLBACK_RELEASES_PAGE || url.includes('/releases/tag/') || (!/\.(dmg|exe|zip|appimage|apk|txt)$/i.test(url) && !url.includes('/download/'))) {
+      el.setAttribute('target', '_blank');
+      el.setAttribute('rel', 'noopener noreferrer');
+    } else {
+      el.removeAttribute('target');
+      el.removeAttribute('rel');
+    }
+  }
+
+  function applyReleaseData(release) {
+    const os = detectClientOS();
+    const assets = (release && release.assets) || {};
+
+    const macAsset = assets.mac || FALLBACK_ASSETS.mac;
+    const winAsset = assets.win || FALLBACK_ASSETS.win;
+    const winPortableAsset = assets.winPortable || FALLBACK_ASSETS.winPortable;
+    const linuxAsset = assets.linux || FALLBACK_ASSETS.linux;
+    const androidAsset = assets.android || FALLBACK_ASSETS.android;
+    const checksumsAsset = assets.checksums || FALLBACK_ASSETS.checksums;
+
+    // Eyebrow badge tag
+    if (releaseTagText && release && release.tagName) {
+      releaseTagText.innerHTML = `${release.tagName} &middot; 100% Offline &middot; macOS, Windows, Linux &amp; Android`;
+    }
+
+    // 1. Primary CTA
+    if (os === 'ios') {
       if (mobileNoticeBox) mobileNoticeBox.style.display = 'block';
       if (primaryBtn) {
-        primaryBtn.href = URL_MAC;
+        setLinkTarget(primaryBtn, macAsset.url);
         if (primaryLabel) primaryLabel.textContent = 'Desktop Installers';
         if (primarySubtext) primarySubtext.textContent = 'macOS · Windows · Linux';
       }
-    } else if (os === 'win') {
+    } else if (os === 'android') {
+      if (mobileNoticeBox) mobileNoticeBox.style.display = 'none';
       if (primaryBtn) {
-        primaryBtn.href = URL_WIN;
-        if (primaryLabel) primaryLabel.textContent = 'Download for Windows';
-        if (primarySubtext) primarySubtext.textContent = 'Windows 10/11 x64 · .exe';
+        setLinkTarget(primaryBtn, androidAsset.url);
+        if (primaryLabel) primaryLabel.textContent = 'Download for Android';
+        const sub = androidAsset.size ? `ARM64 & x86_64 · .apk · ${androidAsset.size}` : 'ARM64 & x86_64 · .apk';
+        if (primarySubtext) primarySubtext.textContent = sub;
       }
       if (checksumCommandCode) {
-        checksumCommandCode.textContent = 'certutil -hashfile EdgeDrop-Windows-x64.exe SHA256';
+        checksumCommandCode.textContent = `sha256sum ${androidAsset.name || 'EdgeDrop-Android.apk'}`;
+      }
+    } else if (os === 'win') {
+      if (mobileNoticeBox) mobileNoticeBox.style.display = 'none';
+      if (primaryBtn) {
+        setLinkTarget(primaryBtn, winAsset.url);
+        if (primaryLabel) primaryLabel.textContent = 'Download for Windows';
+        const sub = winAsset.size ? `Windows 10/11 x64 · .exe · ${winAsset.size}` : 'Windows 10/11 x64 · .exe';
+        if (primarySubtext) primarySubtext.textContent = sub;
+      }
+      if (checksumCommandCode) {
+        checksumCommandCode.textContent = `certutil -hashfile ${winAsset.name || 'EdgeDrop-Windows-x64.exe'} SHA256`;
       }
     } else if (os === 'linux') {
+      if (mobileNoticeBox) mobileNoticeBox.style.display = 'none';
       if (primaryBtn) {
-        primaryBtn.href = URL_LINUX;
+        setLinkTarget(primaryBtn, linuxAsset.url);
         if (primaryLabel) primaryLabel.textContent = 'Download for Linux';
-        if (primarySubtext) primarySubtext.textContent = 'x86_64 · .AppImage';
+        const sub = linuxAsset.size ? `x86_64 · .AppImage · ${linuxAsset.size}` : 'x86_64 · .AppImage';
+        if (primarySubtext) primarySubtext.textContent = sub;
       }
       if (checksumCommandCode) {
         checksumCommandCode.textContent = 'sha256sum -c SHA256SUMS.txt';
       }
     } else {
       // Default to macOS
+      if (mobileNoticeBox) mobileNoticeBox.style.display = 'none';
       if (primaryBtn) {
-        primaryBtn.href = URL_MAC;
+        setLinkTarget(primaryBtn, macAsset.url);
         if (primaryLabel) primaryLabel.textContent = 'Download for macOS';
-        if (primarySubtext) primarySubtext.textContent = 'Apple Silicon · .dmg';
+        const sub = macAsset.size ? `Apple Silicon · .dmg · ${macAsset.size}` : 'Apple Silicon · .dmg';
+        if (primarySubtext) primarySubtext.textContent = sub;
       }
       if (checksumCommandCode) {
         checksumCommandCode.textContent = 'shasum -a 256 -c SHA256SUMS.txt';
       }
     }
+
+    // 2. Secondary Direct Download Links
+    setLinkTarget(linkMac, macAsset.url);
+    if (linkMac && macAsset.size) linkMac.title = `${macAsset.name} (${macAsset.size})`;
+
+    setLinkTarget(linkWin, winAsset.url);
+    if (linkWin && winAsset.size) linkWin.title = `${winAsset.name} (${winAsset.size})`;
+
+    setLinkTarget(linkPortable, winPortableAsset.url);
+    if (linkPortable && winPortableAsset.size) linkPortable.title = `${winPortableAsset.name} (${winPortableAsset.size})`;
+
+    setLinkTarget(linkLinux, linuxAsset.url);
+    if (linkLinux && linuxAsset.size) linkLinux.title = `${linuxAsset.name} (${linuxAsset.size})`;
+
+    setLinkTarget(linkAndroid, androidAsset.url);
+    if (linkAndroid && androidAsset.size) linkAndroid.title = `${androidAsset.name} (${androidAsset.size})`;
+
+    setLinkTarget(linkChecksums, checksumsAsset.url);
+
+    // 3. Footer Links
+    setLinkTarget(footerLinkMac, macAsset.url);
+    setLinkTarget(footerLinkWin, winAsset.url);
+    setLinkTarget(footerLinkPortable, winPortableAsset.url);
+    setLinkTarget(footerLinkLinux, linuxAsset.url);
+    setLinkTarget(footerLinkAndroid, androidAsset.url);
+    setLinkTarget(footerLinkChecksums, checksumsAsset.url);
   }
 
-  setupDownloadCTA();
+  // Initial immediate sync with fallbacks & client OS
+  applyReleaseData(null);
+
+  // Asynchronous enhancement from live GitHub Releases API (cached 15 min)
+  fetchLatestRelease().then(release => {
+    if (release) {
+      applyReleaseData(release);
+    }
+  });
 
   // Mobile copy link button
   if (copyPageLinkBtn) {
@@ -525,7 +746,8 @@
   const noticePanels = {
     mac: document.getElementById('notice-panel-mac'),
     win: document.getElementById('notice-panel-win'),
-    linux: document.getElementById('notice-panel-linux')
+    linux: document.getElementById('notice-panel-linux'),
+    android: document.getElementById('notice-panel-android')
   };
 
   noticeTabs.forEach(tab => {
@@ -547,7 +769,7 @@
 
   // Automatically select the user's detected OS in the first-launch guide
   const detectedOS = detectClientOS();
-  if (detectedOS === 'win' || detectedOS === 'linux') {
+  if (detectedOS === 'win' || detectedOS === 'linux' || detectedOS === 'android') {
     const targetTab = document.querySelector(`.notice-tab[data-os="${detectedOS}"]`);
     if (targetTab) targetTab.click();
   }
