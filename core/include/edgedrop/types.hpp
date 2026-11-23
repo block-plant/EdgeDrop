@@ -1,10 +1,12 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <filesystem>
 #include <cstdint>
 #include <functional>
 #include <atomic>
+#include <vector>
 #include <sstream>
 #include <iomanip>
 

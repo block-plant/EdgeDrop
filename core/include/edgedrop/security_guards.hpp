@@ -4,6 +4,7 @@
 #include <string>
 #include <string_view>
 #include <cstdint>
+#include <vector>
 #include <system_error>
 
 namespace EdgeDrop {

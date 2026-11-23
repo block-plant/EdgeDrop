@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <cstdint>
+#include <filesystem>
 
 namespace EdgeDrop {
 
