@@ -28,7 +28,7 @@ jobs:
 
       - name: Install Android SDK & NDK Components
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
             "platforms;android-35" \
             "build-tools;35.0.0" \
@@ -47,8 +47,15 @@ jobs:
       - name: Verify APK & Bundled Native Libraries
         run: |
           APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          if [ -z "${APK_PATH}" ]; then
+            echo "::error::No APK found in android/app/build/outputs/apk/debug/"
+            exit 1
+          fi
           echo "Found APK at: ${APK_PATH}"
-          unzip -l "${APK_PATH}" | grep -E "libedgedrop_jni.so|classes.dex" || true
+          echo "Verifying classes.dex and 64-bit native libraries..."
+          unzip -l "${APK_PATH}" | grep "classes.dex"
+          unzip -l "${APK_PATH}" | grep "lib/arm64-v8a/libedgedrop_jni.so"
+          unzip -l "${APK_PATH}" | grep "lib/x86_64/libedgedrop_jni.so"
 
       - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4

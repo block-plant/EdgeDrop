@@ -31,6 +31,10 @@ Makefile
 *.dmg
 *.AppImage
 
+# Gradle wrapper JAR must be tracked
+!gradle-wrapper.jar
+!android/gradle/wrapper/gradle-wrapper.jar
+
 # OS-specific
 .DS_Store
 Thumbs.db
