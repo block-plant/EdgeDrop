@@ -4,6 +4,7 @@
 #include "platform/PlatformHelper.hpp"
 #include <QAction>
 #include <QApplication>
+#include <QGuiApplication>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
@@ -24,6 +25,9 @@
 
 int main(int argc, char *argv[]) {
   // High DPI and platform attributes
+  QGuiApplication::setHighDpiScaleFactorRoundingPolicy(
+      Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+
   QApplication::setOrganizationName("EdgeDrop");
   QApplication::setApplicationName("EdgeDrop");
   QApplication::setApplicationVersion("3.0.0");

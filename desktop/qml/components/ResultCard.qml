@@ -468,5 +468,92 @@ Item {
                 }
             }
         }
+
+        // ── Error State ───────────────────────────────────────────────────────
+        Column {
+            visible: !appController.isProcessing && Boolean(appController.currentResult && appController.currentResult.success === false)
+            width: parent.width
+            spacing: 14
+
+            Rectangle {
+                width: parent.width
+                height: 84
+                radius: 10
+                color: Theme.surfaceElevated
+                border.color: Theme.borderHairline
+                border.width: 1
+
+                Row {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 10
+
+                    Rectangle {
+                        width: 32
+                        height: 32
+                        radius: 16
+                        color: Qt.rgba(0.9, 0.2, 0.2, 0.15)
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "!"
+                            font.pixelSize: 15
+                            font.weight: Font.Bold
+                            color: Theme.danger
+                        }
+                    }
+
+                    Column {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - 46
+                        spacing: 3
+
+                        Text {
+                            text: "Compression Issue"
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                            color: Theme.textPrimary
+                        }
+
+                        Text {
+                            text: (appController.currentResult && appController.currentResult.errorMessage)
+                                  ? appController.currentResult.errorMessage
+                                  : "Couldn't process this file."
+                            font.pixelSize: 11
+                            color: Theme.textSecondary
+                            wrapMode: Text.Wrap
+                            width: parent.width
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                width: parent.width
+                height: 36
+                radius: Theme.radiusSmall
+                color: tryAgainHover.hovered ? Theme.accentHover : Theme.accent
+
+                HoverHandler {
+                    id: tryAgainHover
+                    blocking: false
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "Try Another File"
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    color: Theme.textOnAccent
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: appController.resetToHome()
+                }
+            }
+        }
     }
 }

@@ -808,4 +808,119 @@
   updateSimClock();
   setInterval(updateSimClock, 30000);
 
+  // ── 9. Install Guide Modal Logic ──────────────────────────────────────────
+
+  const installModal = document.getElementById('install-modal');
+  const installModalClose = document.getElementById('install-modal-close');
+  const openInstallGuide = document.getElementById('open-install-guide');
+  const modalTabs = document.querySelectorAll('.modal-tab');
+  const modalPanels = {
+    mac: document.getElementById('modal-panel-mac'),
+    win: document.getElementById('modal-panel-win'),
+    linux: document.getElementById('modal-panel-linux'),
+    android: document.getElementById('modal-panel-android')
+  };
+
+  function selectModalTab(osKey) {
+    modalTabs.forEach(t => {
+      const isMatch = t.dataset.os === osKey;
+      t.classList.toggle('active', isMatch);
+      t.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+    });
+    Object.keys(modalPanels).forEach(os => {
+      if (modalPanels[os]) {
+        modalPanels[os].classList.toggle('active', os === osKey);
+      }
+    });
+  }
+
+  function openModal(preferredOS) {
+    if (!installModal) return;
+    const os = preferredOS || detectClientOS() || 'mac';
+    selectModalTab(os === 'ios' ? 'mac' : os);
+    installModal.removeAttribute('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    if (!installModal) return;
+    installModal.setAttribute('hidden', '');
+    document.body.style.overflow = '';
+  }
+
+  if (openInstallGuide) {
+    openInstallGuide.addEventListener('click', (e) => {
+      e.preventDefault();
+      openModal();
+    });
+  }
+
+  if (installModalClose) {
+    installModalClose.addEventListener('click', closeModal);
+  }
+
+  if (installModal) {
+    installModal.addEventListener('click', (e) => {
+      if (e.target === installModal) closeModal();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && installModal && !installModal.hasAttribute('hidden')) {
+      closeModal();
+    }
+  });
+
+  modalTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      selectModalTab(tab.dataset.os);
+    });
+  });
+
+  // Inline copy buttons inside modal
+  const copyInlineBtns = document.querySelectorAll('.copy-inline-btn');
+  copyInlineBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const textToCopy = btn.dataset.copy;
+      if (!textToCopy) return;
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+          btn.textContent = originalText;
+        }, 2000);
+      } catch {
+        btn.textContent = 'Failed';
+      }
+    });
+  });
+
+  // When download buttons are clicked: open modal with that OS selected after 600ms so download initiates first
+  const downloadTriggers = [
+    { id: 'primary-cta-btn', os: () => detectClientOS() },
+    { id: 'link-mac', os: 'mac' },
+    { id: 'link-win', os: 'win' },
+    { id: 'link-portable', os: 'win' },
+    { id: 'link-linux', os: 'linux' },
+    { id: 'link-android', os: 'android' },
+    { id: 'footer-link-mac', os: 'mac' },
+    { id: 'footer-link-win', os: 'win' },
+    { id: 'footer-link-portable', os: 'win' },
+    { id: 'footer-link-linux', os: 'linux' },
+    { id: 'footer-link-android', os: 'android' }
+  ];
+
+  downloadTriggers.forEach(({ id, os }) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('click', () => {
+        const targetOS = typeof os === 'function' ? os() : os;
+        setTimeout(() => {
+          openModal(targetOS);
+        }, 600);
+      });
+    }
+  });
+
 })();

@@ -146,6 +146,8 @@ int main() {
 
         check("PDF Pass-through success", res.success);
         check("PDF Pass-through size preserved", res.outputSizeBytes == srcSize);
+        check("PDF Pass-through hitFloor set", res.hitFloor);
+        check("PDF Pass-through floorNote set", !res.floorNote.empty());
 
         std::error_code ec;
         std::filesystem::remove(res.outputFilePath, ec);

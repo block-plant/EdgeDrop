@@ -14,7 +14,7 @@ Window {
 
     // Strict mutually exclusive active view router
     readonly property string activeView: settingsOpen ? "settings"
-                                       : (appController.isProcessing || (appController.currentResult && appController.currentResult.success)) ? "result"
+                                       : (appController.isProcessing || (appController.currentResult && appController.currentResult.hasOwnProperty("success"))) ? "result"
                                        : (appController.loadedFiles && appController.loadedFiles.length > 0) ? "config"
                                        : "home"
 
@@ -653,6 +653,68 @@ Window {
                     onClosed: {
                         mainWindow.settingsOpen = false;
                     }
+                }
+            }
+        }
+
+        // Resize Grip at bottom corner opposite to screen edge
+        Item {
+            id: resizeHandle
+            visible: edgeWindowManager.isExpanded && !edgeWindowManager.isRepositioning && !edgeWindowManager.isSnapping
+            anchors.bottom: parent.bottom
+            anchors.right: edgeWindowManager.screenEdge === "left" ? parent.right : undefined
+            anchors.left: edgeWindowManager.screenEdge === "right" ? parent.left : undefined
+            width: 20
+            height: 20
+            z: 998
+
+            Canvas {
+                id: resizeGripCanvas
+                anchors.fill: parent
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.strokeStyle = resizeHover.hovered ? Theme.accent : Theme.textMuted;
+                    ctx.lineWidth = 1.5;
+                    ctx.lineCap = "round";
+                    if (edgeWindowManager.screenEdge === "left") {
+                        ctx.beginPath();
+                        ctx.moveTo(width - 5, height - 12);
+                        ctx.lineTo(width - 12, height - 5);
+                        ctx.moveTo(width - 5, height - 7);
+                        ctx.lineTo(width - 7, height - 5);
+                        ctx.stroke();
+                    } else {
+                        ctx.beginPath();
+                        ctx.moveTo(5, height - 12);
+                        ctx.lineTo(12, height - 5);
+                        ctx.moveTo(5, height - 7);
+                        ctx.lineTo(7, height - 5);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            HoverHandler {
+                id: resizeHover
+                blocking: false
+                onHoveredChanged: resizeGripCanvas.requestPaint()
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: edgeWindowManager.screenEdge === "left" ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor
+                property int startX: 0
+                property int startY: 0
+                onPressed: (mouse) => {
+                    startX = mouse.x;
+                    startY = mouse.y;
+                }
+                onPositionChanged: (mouse) => {
+                    var dx = mouse.x - startX;
+                    var dy = mouse.y - startY;
+                    var deltaW = (edgeWindowManager.screenEdge === "left") ? dx : -dx;
+                    edgeWindowManager.resizeCard(deltaW, dy);
                 }
             }
         }

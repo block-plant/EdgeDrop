@@ -100,6 +100,17 @@ void EdgeWindowManager::setEdgeOffsetPercent(double percent) {
     }
 }
 
+void EdgeWindowManager::setCardWidth(int width) {
+    int clamped = std::clamp(width, 280, 520);
+    if (m_cardWidth != clamped) {
+        m_cardWidth = clamped;
+        emit cardWidthChanged(clamped);
+        if (m_isExpanded) {
+            recalculateGeometry();
+        }
+    }
+}
+
 void EdgeWindowManager::setCardHeight(int height) {
     int clamped = std::clamp(height, 180, 700);
     if (m_cardHeight != clamped) {
@@ -108,6 +119,26 @@ void EdgeWindowManager::setCardHeight(int height) {
         if (m_isExpanded) {
             recalculateGeometry();
         }
+    }
+}
+
+void EdgeWindowManager::resizeCard(int deltaW, int deltaH) {
+    if (!m_isExpanded) return;
+    int newW = std::clamp(m_cardWidth + deltaW, 280, 520);
+    int newH = std::clamp(m_cardHeight + deltaH, 180, 700);
+    bool changed = false;
+    if (newW != m_cardWidth) {
+        m_cardWidth = newW;
+        emit cardWidthChanged(m_cardWidth);
+        changed = true;
+    }
+    if (newH != m_cardHeight) {
+        m_cardHeight = newH;
+        emit cardHeightChanged(m_cardHeight);
+        changed = true;
+    }
+    if (changed) {
+        recalculateGeometry();
     }
 }
 
@@ -169,7 +200,7 @@ void EdgeWindowManager::endRepositioning(int /*globalMouseX*/, int /*globalMouse
     QString newEdge = (winCenterX < screenMidX) ? "left" : "right";
 
     // Capture the exact fixed (w, h) for current state before starting snap
-    int exactW = m_isExpanded ? kCardWidth : kPillWidth;
+    int exactW = m_isExpanded ? m_cardWidth : kPillWidth;
     int exactH = m_isExpanded ? std::min(m_cardHeight, static_cast<int>(avail.height() * 0.85)) : kPillHeight;
 
     int targetX = (newEdge == "left") ? avail.left() : (avail.right() - exactW + 1);
@@ -231,7 +262,7 @@ void EdgeWindowManager::endRepositioning(int /*globalMouseX*/, int /*globalMouse
 
             QScreen* s = activeScreen();
             QRect av = s ? s->availableGeometry() : QRect(0, 0, 1920, 1080);
-            int ew = m_isExpanded ? kCardWidth : kPillWidth;
+            int ew = m_isExpanded ? m_cardWidth : kPillWidth;
             int eh = m_isExpanded ? std::min(m_cardHeight, static_cast<int>(av.height() * 0.85)) : kPillHeight;
             int tx = (m_screenEdge == "left") ? av.left() : (av.right() - ew + 1);
             int mty = av.height() - eh;
@@ -281,7 +312,7 @@ void EdgeWindowManager::recalculateGeometry() {
     if (!screen) return;
 
     QRect avail = screen->availableGeometry();
-    int targetW = m_isExpanded ? kCardWidth : kPillWidth;
+    int targetW = m_isExpanded ? m_cardWidth : kPillWidth;
     int targetH = m_isExpanded ? std::min(m_cardHeight, static_cast<int>(avail.height() * 0.85)) : kPillHeight;
 
     int posX = (m_screenEdge.toLower() == "left") ? avail.left() : (avail.right() - targetW + 1);

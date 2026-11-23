@@ -71,6 +71,13 @@ Item {
                         font.pixelSize: 11
                         color: Theme.textSecondary
                     }
+
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "JPG · PNG · WebP · HEIC · PDF · DOCX · PPTX · MP4 · MP3 · Up to 2 GB"
+                        font.pixelSize: 9
+                        color: Theme.textMuted
+                    }
                 }
 
                 // Action links

@@ -464,11 +464,13 @@ Item {
             width: parent.width
             height: 40
             radius: 10
-            color: compressHover.hovered ? Theme.accentHover : Theme.accent
+            opacity: appController.isProcessing ? 0.6 : 1.0
+            color: (compressHover.hovered && !appController.isProcessing) ? Theme.accentHover : Theme.accent
 
             scale: compressMouse.pressed ? 0.98 : 1.0
             Behavior on scale { NumberAnimation { duration: 100 } }
             Behavior on color { ColorAnimation { duration: Theme.animHoverMs; easing.type: Easing.OutCubic } }
+            Behavior on opacity { NumberAnimation { duration: 120 } }
 
             HoverHandler {
                 id: compressHover
@@ -480,7 +482,7 @@ Item {
                 spacing: 6
 
                 Text {
-                    text: "Compress"
+                    text: appController.isProcessing ? "Shrinking…" : "Compress"
                     font.pixelSize: 13
                     font.weight: Font.DemiBold
                     color: Theme.textOnAccent
@@ -488,6 +490,7 @@ Item {
                 }
 
                 Text {
+                    visible: !appController.isProcessing
                     text: "↵"
                     font.pixelSize: 11
                     color: Qt.rgba(1, 1, 1, 0.75)
@@ -498,8 +501,12 @@ Item {
             MouseArea {
                 id: compressMouse
                 anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: appController.processCurrent()
+                enabled: !appController.isProcessing
+                cursorShape: appController.isProcessing ? Qt.BusyCursor : Qt.PointingHandCursor
+                onClicked: {
+                    mainWindow.requestActivate();
+                    appController.processCurrent();
+                }
             }
         }
 

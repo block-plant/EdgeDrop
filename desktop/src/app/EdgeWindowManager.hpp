@@ -22,6 +22,7 @@ class EdgeWindowManager : public QObject {
     Q_PROPERTY(int windowY READ windowY NOTIFY geometryChanged)
     Q_PROPERTY(int windowWidth READ windowWidth NOTIFY geometryChanged)
     Q_PROPERTY(int windowHeight READ windowHeight NOTIFY geometryChanged)
+    Q_PROPERTY(int cardWidth READ cardWidth WRITE setCardWidth NOTIFY cardWidthChanged)
     Q_PROPERTY(int cardHeight READ cardHeight WRITE setCardHeight NOTIFY cardHeightChanged)
     Q_PROPERTY(bool isRepositioning READ isRepositioning NOTIFY isRepositioningChanged)
     Q_PROPERTY(bool isSnapping READ isSnapping NOTIFY isSnappingChanged)
@@ -45,6 +46,9 @@ public:
     [[nodiscard]] double edgeYRatio() const { return m_edgeOffsetPercent; }
     void setEdgeYRatio(double ratio) { setEdgeOffsetPercent(ratio); }
 
+    [[nodiscard]] int cardWidth() const { return m_cardWidth; }
+    void setCardWidth(int width);
+
     [[nodiscard]] int cardHeight() const { return m_cardHeight; }
     void setCardHeight(int height);
 
@@ -66,12 +70,14 @@ public:
 
     Q_INVOKABLE void recalculateGeometry();
     Q_INVOKABLE void updatePillDragOffset(int deltaY);
+    Q_INVOKABLE void resizeCard(int deltaW, int deltaH);
 
 signals:
     void isExpandedChanged(bool expanded);
     void screenEdgeChanged(const QString& edge);
     void edgeOffsetPercentChanged(double percent);
     void edgeYRatioChanged(double ratio);
+    void cardWidthChanged(int width);
     void cardHeightChanged(int height);
     void isRepositioningChanged(bool repositioning);
     void isSnappingChanged(bool isSnapping);
@@ -98,7 +104,8 @@ private:
 
     static constexpr int kPillWidth = 14;
     static constexpr int kPillHeight = 68;
-    static constexpr int kCardWidth = 316;
+    static constexpr int kDefaultCardWidth = 316;
+    int m_cardWidth = 316;
 
     QRect m_currentGeo{0, 0, kPillWidth, kPillHeight};
     QVariantAnimation* m_snapAnimation = nullptr;

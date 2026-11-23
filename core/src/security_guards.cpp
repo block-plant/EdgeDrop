@@ -93,6 +93,12 @@ std::string SecurityGuards::validateOutputDir(const std::filesystem::path& outpu
         }
     }
 
+    // Check available disk space (require at least 50 MB free space)
+    auto spaceInfo = std::filesystem::space(outputDir, ec);
+    if (!ec && spaceInfo.available < 50ULL * 1024 * 1024) {
+        return "Insufficient disk space in output directory (less than 50 MB available).";
+    }
+
     return "";
 }
 

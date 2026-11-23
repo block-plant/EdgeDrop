@@ -91,7 +91,8 @@ static bool tier1Compress(const std::filesystem::path& inPath,
                           const std::filesystem::path& outPath,
                           int64_t targetBytes,
                           ProgressCallback progress,
-                          CancelToken cancel) {
+                          CancelToken cancel,
+                          int overrideJpegQ = 0) {
     try {
         QPDF pdf;
         pdf.processFile(inPath.string().c_str());
@@ -183,13 +184,16 @@ static bool tier1Compress(const std::filesystem::path& inPath,
         if (progress) progress(0.3);
 
         int targetJpegQ = 65;
-        if (targetBytes > 0) {
+        if (overrideJpegQ > 0) {
+            targetJpegQ = overrideJpegQ;
+        } else if (targetBytes > 0) {
             int64_t inSize = static_cast<int64_t>(std::filesystem::file_size(inPath));
             if (inSize > 0) {
                 double ratio = static_cast<double>(targetBytes) / static_cast<double>(inSize);
-                if (ratio < 0.4) targetJpegQ = 35;
-                else if (ratio < 0.7) targetJpegQ = 50;
-                else targetJpegQ = 70;
+                if (ratio < 0.25) targetJpegQ = 35;
+                else if (ratio < 0.50) targetJpegQ = 50;
+                else if (ratio < 0.75) targetJpegQ = 65;
+                else targetJpegQ = 78;
             }
         }
 
@@ -447,6 +451,8 @@ JobResult PdfCompressor::compress(const JobRequest& req,
             result.outputFilePath = outPath;
             result.outputSizeBytes = result.inputSizeBytes;
             result.outputFormat = "PDF";
+            result.hitFloor = true;
+            result.floorNote = "Already smaller than your target size.";
             auto t1 = std::chrono::steady_clock::now();
             result.durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
             if (progress) progress(1.0);
@@ -502,10 +508,13 @@ JobResult PdfCompressor::compress(const JobRequest& req,
     if (req.targetBytes > 0 && (bestSize == 0 || bestSize > req.targetBytes) && !gsBin.empty()) {
         struct GsPreset { int dpi; int q; };
         std::vector<GsPreset> presets = {
-            {130, 65}, // Pass A
-            {96,  45}, // Pass B
-            {72,  30}, // Pass C (floor)
-            {72,  22}  // Pass D (deeper readable floor)
+            {150, 75}, // Pass A: Fine / high fidelity
+            {130, 65}, // Pass B: High quality standard
+            {110, 55}, // Pass C: Balanced
+            {96,  45}, // Pass D: Medium
+            {80,  35}, // Pass E: Compact
+            {72,  30}, // Pass F: Floor
+            {72,  22}  // Pass G: Deep floor
         };
 
         const auto& gsInput = (t1Success && t1Size > 0) ? tier1TmpPath : req.inputFilePath;
@@ -562,6 +571,24 @@ JobResult PdfCompressor::compress(const JobRequest& req,
                     std::error_code ec;
                     std::filesystem::remove(tier2TmpPath, ec);
                 }
+            }
+        }
+    } else if (req.targetBytes > 0 && (bestSize == 0 || bestSize > req.targetBytes) && gsBin.empty()) {
+        // Fallback Tier 1 second pass at deeper compression (Q=35) when Ghostscript is absent
+        std::string tmpName1b = ".edgedrop.tmp.t1b." + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ".pdf";
+        std::filesystem::path tier1bTmpPath = outDir / tmpName1b;
+        if (tier1Compress(req.inputFilePath, tier1bTmpPath, req.targetBytes, nullptr, cancel, 35)) {
+            int64_t t1bSize = static_cast<int64_t>(std::filesystem::file_size(tier1bTmpPath));
+            if (t1bSize > 0 && (bestSize == 0 || t1bSize < bestSize)) {
+                if (bestCandidate != tier1TmpPath && std::filesystem::exists(bestCandidate)) {
+                    std::error_code ec;
+                    std::filesystem::remove(bestCandidate, ec);
+                }
+                bestCandidate = tier1bTmpPath;
+                bestSize = t1bSize;
+            } else {
+                std::error_code ec;
+                std::filesystem::remove(tier1bTmpPath, ec);
             }
         }
     }

@@ -146,7 +146,7 @@
 
             <p class="reassurance-text">
               Free &amp; open source &middot; No account &middot; No uploads &middot; <a href="#first-launch-guide"
-                class="sec-link">First-launch tip</a>
+                class="sec-link" id="open-install-guide">Seeing a security warning? View install guide &rarr;</a>
             </p>
           </div>
         </div>
@@ -649,6 +649,101 @@
       </div>
     </div>
   </footer>
+
+  <!-- ========================================================================= -->
+  <!-- Install Guide Modal                                                       -->
+  <!-- ========================================================================= -->
+  <div id="install-modal" class="install-modal-overlay" role="dialog" aria-modal="true"
+    aria-labelledby="install-modal-title" hidden>
+    <div class="install-modal-card">
+      <div class="install-modal-header">
+        <div class="install-modal-title-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="install-modal-icon">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <h2 id="install-modal-title" class="install-modal-heading">How to Install &amp; Open EdgeDrop</h2>
+        </div>
+        <button class="install-modal-close" id="install-modal-close" aria-label="Close install guide">&times;</button>
+      </div>
+
+      <p class="install-modal-note">
+        EdgeDrop is 100% open-source and runs completely offline &mdash; your files never leave your device. Because it
+        is distributed as an independent build without an expensive paid corporate certificate, your system shows a
+        standard first-launch prompt.
+      </p>
+
+      <div class="notice-os-tabs modal-os-tabs" role="tablist" id="modal-os-tabs"
+        aria-label="Modal operating system guidance">
+        <button class="notice-tab modal-tab active" data-os="mac" role="tab" aria-selected="true">macOS</button>
+        <button class="notice-tab modal-tab" data-os="win" role="tab" aria-selected="false">Windows</button>
+        <button class="notice-tab modal-tab" data-os="linux" role="tab" aria-selected="false">Linux</button>
+        <button class="notice-tab modal-tab" data-os="android" role="tab" aria-selected="false">Android</button>
+      </div>
+
+      <div class="notice-tab-content modal-tab-content">
+        <div id="modal-panel-mac" class="notice-panel modal-panel active">
+          <ol class="notice-steps">
+            <li>Open the downloaded <code>.dmg</code> and drag <strong>EdgeDrop.app</strong> into
+              <strong>Applications</strong>.</li>
+            <li>On first launch, if macOS says <em>&ldquo;EdgeDrop cannot be opened because Apple cannot check it for
+                malicious software&rdquo;</em>, click <strong>Done</strong>.</li>
+            <li>Go to <strong>System Settings &rarr; Privacy &amp; Security</strong>, scroll down to the
+              <strong>Security</strong> section, and click <strong>Open Anyway</strong>.</li>
+            <li>Or bypass quarantine via Terminal:
+              <div class="modal-code-row">
+                <code>xattr -cr /Applications/EdgeDrop.app</code>
+                <button class="copy-inline-btn" data-copy="xattr -cr /Applications/EdgeDrop.app"
+                  aria-label="Copy terminal command">Copy</button>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <div id="modal-panel-win" class="notice-panel modal-panel">
+          <ol class="notice-steps">
+            <li>Run the downloaded <code>EdgeDrop-Windows-x64.exe</code> installer.</li>
+            <li>When Windows Defender SmartScreen appears (<em>&ldquo;Windows protected your PC&rdquo;</em>), click
+              <strong>More info</strong>.</li>
+            <li>Click <strong>Run anyway</strong> to complete installation and launch EdgeDrop.</li>
+            <li>Or run the portable <code>.zip</code>: extract anywhere and double-click <code>EdgeDrop.exe</code>.</li>
+          </ol>
+        </div>
+
+        <div id="modal-panel-linux" class="notice-panel modal-panel">
+          <ol class="notice-steps">
+            <li>Make the downloaded AppImage executable:
+              <div class="modal-code-row">
+                <code>chmod +x EdgeDrop-*.AppImage &amp;&amp; ./EdgeDrop-*.AppImage</code>
+                <button class="copy-inline-btn" data-copy="chmod +x EdgeDrop-*.AppImage && ./EdgeDrop-*.AppImage"
+                  aria-label="Copy terminal command">Copy</button>
+              </div>
+            </li>
+            <li>Or right-click the <code>.AppImage</code> &rarr; <strong>Properties</strong> &rarr;
+              <strong>Permissions</strong> &rarr; check <strong>&ldquo;Allow executing file as program&rdquo;</strong>.
+            </li>
+          </ol>
+        </div>
+
+        <div id="modal-panel-android" class="notice-panel modal-panel">
+          <ol class="notice-steps">
+            <li>Open the downloaded <code>EdgeDrop-Android.apk</code> on your Android device.</li>
+            <li>When prompted, tap <strong>Settings</strong> &rarr; enable <strong>&ldquo;Allow from this
+                source&rdquo;</strong> (Install unknown apps).</li>
+            <li>Tap <strong>Install</strong>, then tap <strong>Open</strong> to start shrinking files.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="install-modal-footer">
+        <span>Verify download checksums: <a
+            href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS.txt" target="_blank"
+            rel="noopener noreferrer" class="sec-link">SHA256SUMS.txt</a></span>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

@@ -19,6 +19,7 @@ AppController::AppController(QObject* parent)
     connect(&m_edgeWindowManager, &EdgeWindowManager::screenEdgeChanged,
             &m_wallpaperThemeEngine, &WallpaperThemeEngine::updateForEdge);
 
+    connect(&m_jobRunner, &JobRunner::jobStarted,     this, &AppController::isProcessingChanged);
     connect(&m_jobRunner, &JobRunner::jobFinished,   this, &AppController::onJobFinished);
     connect(&m_jobRunner, &JobRunner::jobProgress,   this, &AppController::onJobProgress);
     connect(&m_jobRunner, &JobRunner::batchProgress, this, &AppController::onBatchProgress);
@@ -100,15 +101,28 @@ void AppController::handleDroppedUrls(const QList<QUrl>& urls) {
 
     QStringList validFiles;
     for (const auto& url : urls) {
-        QString path = url.isLocalFile() ? url.toLocalFile() : url.toString();
+        QString path;
+        if (url.isLocalFile()) {
+            path = url.toLocalFile();
+        } else if (url.scheme() == "file") {
+            path = url.path();
+#if defined(Q_OS_WIN)
+            if (path.startsWith('/') && path.length() > 2 && path[2] == ':') {
+                path = path.mid(1);
+            }
+#endif
+        } else {
+            path = url.toString();
+        }
+
         QFileInfo fi(path);
         if (fi.exists() && fi.isFile() && supported.contains(fi.suffix().toLower())) {
-            validFiles.append(path);
+            validFiles.append(fi.absoluteFilePath());
         }
     }
 
     if (validFiles.isEmpty()) {
-        emit errorOccurred("Drop a supported file: Photos, PDF, Word/PPT/Excel, Video, or Audio");
+        emit errorOccurred(QStringLiteral("Unsupported file type. Try: Photos (JPG, PNG, WebP, HEIC), PDF, Docs (DOCX, PPTX, XLSX), or Media (MP4, MP3, WAV)."));
         return;
     }
 
@@ -172,7 +186,6 @@ void AppController::processCurrent() {
 
     m_compressionProgress = 0.0;
     emit compressionProgressChanged();
-    emit isProcessingChanged();
 
     if (m_loadedFiles.size() == 1) {
         m_jobRunner.runJob(buildReq(m_loadedFiles.first()));
@@ -181,6 +194,7 @@ void AppController::processCurrent() {
         for (const auto& path : m_loadedFiles) batch.append(buildReq(path));
         m_jobRunner.runBatch(batch);
     }
+    emit isProcessingChanged();
 }
 
 // ── cancelCurrent ─────────────────────────────────────────────────────────────
@@ -353,6 +367,14 @@ void AppController::onJobFinished(const EdgeDrop::JobResult& result) {
     emit isProcessingChanged();
 
     if (!result.success) {
+        QString inPath = QString::fromStdString(result.inputFilePath.string());
+        QVariantMap errMap;
+        errMap["success"] = false;
+        errMap["errorMessage"] = humanizeErrorMessage(result.errorMessage);
+        errMap["inputFilePath"] = inPath;
+        errMap["inputFileName"] = QFileInfo(inPath).fileName();
+        m_currentResult = errMap;
+        emit currentResultChanged();
         emit errorOccurred(humanizeErrorMessage(result.errorMessage));
         return;
     }
