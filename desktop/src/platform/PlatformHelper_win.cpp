@@ -10,14 +10,15 @@
 #include <QPixmap>
 #include <QFileInfo>
 #include <QProcess>
+#include <QDir>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 static HWINEVENTHOOK g_winEventHook = nullptr;
-static EdgeWindowManager* g_winWindowManager = nullptr;
-static AppController* g_winAppController = nullptr;
+static EdgeDrop::EdgeWindowManager* g_winWindowManager = nullptr;
+static EdgeDrop::AppController* g_winAppController = nullptr;
 static HWND g_winHwnd = nullptr;
 
 static void CALLBACK WinEventProc(HWINEVENTHOOK /*hWinEventHook*/,
