@@ -6,6 +6,7 @@
 #include <random>
 #include <cstring>
 #include <array>
+#include <cstdlib>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -15,7 +16,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#if defined(__linux__)
+#if defined(__linux__) && !defined(__ANDROID__)
 #include <sys/random.h>
 #endif
 #endif
@@ -116,7 +117,7 @@ std::string SecurityGuards::generateRandomHex128() {
     uint8_t bytes[16];
     bool gotRandom = false;
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__ANDROID__)
     arc4random_buf(bytes, sizeof(bytes));
     gotRandom = true;
 #elif defined(_WIN32)
