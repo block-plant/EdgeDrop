@@ -4,10 +4,14 @@
 #include <stdbool.h>
 
 #if defined(_WIN32)
-    #if defined(EDGEDROP_EXPORTS)
-        #define EDGEDROP_API __declspec(dllexport)
+    #if defined(EDGEDROP_SHARED)
+        #if defined(EDGEDROP_EXPORTS)
+            #define EDGEDROP_API __declspec(dllexport)
+        #else
+            #define EDGEDROP_API __declspec(dllimport)
+        #endif
     #else
-        #define EDGEDROP_API __declspec(dllimport)
+        #define EDGEDROP_API
     #endif
 #elif defined(__GNUC__) || defined(__clang__)
     #define EDGEDROP_API __attribute__((visibility("default")))

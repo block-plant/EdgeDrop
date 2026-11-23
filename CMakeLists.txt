@@ -153,6 +153,10 @@ target_link_libraries(edgedrop_core PUBLIC
     nlohmann_json::nlohmann_json
 )
 
+target_compile_definitions(edgedrop_core PUBLIC
+    $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
+)
+
 if(APPLE)
     target_link_options(edgedrop_core PUBLIC "-Wl,-dead_strip_dylibs")
     target_link_libraries(edgedrop_core PUBLIC
@@ -216,6 +220,9 @@ if(EDGEDROP_BUILD_DESKTOP)
     if(TARGET Qt6::QuickEffects)
         target_link_libraries(edgedrop_desktop_lib PUBLIC Qt6::QuickEffects)
     endif()
+    target_compile_definitions(edgedrop_desktop_lib PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
+    )
     if(APPLE)
         target_link_libraries(edgedrop_desktop_lib PUBLIC
             "-framework Cocoa"
@@ -279,6 +286,9 @@ if(EDGEDROP_BUILD_DESKTOP)
     if(TARGET Qt6::QuickEffects)
         target_link_libraries(edgedrop PRIVATE Qt6::QuickEffects)
     endif()
+    target_compile_definitions(edgedrop PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
+    )
 
     if(APPLE)
         target_link_options(edgedrop PRIVATE "-Wl,-dead_strip_dylibs")

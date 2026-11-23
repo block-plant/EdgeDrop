@@ -263,9 +263,9 @@ JobResult MediaCompressor::compress(const JobRequest& req,
         }
 
         std::string scaleFilter = "scale=" + std::to_string(outW) + ":" + std::to_string(outH) + ",fps=min(30\\,fps)";
-        std::string passlogDir = outDir / (".passlog_" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+        std::filesystem::path passlogDir = outDir / (".passlog_" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
         std::filesystem::create_directories(passlogDir);
-        std::string passlogPrefix = (std::filesystem::path(passlogDir) / "ffmpeg2pass").string();
+        std::string passlogPrefix = (passlogDir / "ffmpeg2pass").string();
 
 #ifdef _WIN32
         std::string nullDev = "NUL";
