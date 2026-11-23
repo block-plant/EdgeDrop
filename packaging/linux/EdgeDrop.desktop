@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=EdgeDrop
+GenericName=File Compressor
+Comment=Minimalist, zero-trust offline file compression utility
+Exec=edgedrop %U
+Icon=edgedrop
+Terminal=false
+Categories=Utility;Graphics;AudioVideo;
+Keywords=compression;optimizer;image;pdf;media;local-first;
+StartupNotify=true

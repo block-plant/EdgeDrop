@@ -1,0 +1,12 @@
+{
+  "name": "edgedrop",
+  "version-string": "1.0.0",
+  "dependencies": [
+    "nlohmann-json",
+    {
+      "name": "opencv4",
+      "default-features": false,
+      "features": ["jpeg", "png", "webp", "dnn"]
+    }
+  ]
+}

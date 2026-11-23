@@ -1,0 +1,56 @@
+# Build artifacts & cache
+build/
+bin/
+out/
+target/
+dist/
+release/
+
+# CMake generated
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+*.ninja
+.ninja_*
+.qt/
+.rcc/
+*_autogen/
+
+# Libraries, object files, binaries
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.app
+*.dmg
+*.AppImage
+
+# OS-specific
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# IDE & Editor metadata
+.vscode/
+.idea/
+*.swp
+*~
+*.user
+*.suo
+
+# Python cache & virtual environments
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Secure temporary files
+*.tmp
+.edgedrop.tmp.*
