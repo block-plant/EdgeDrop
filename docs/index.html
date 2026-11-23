@@ -1,22 +1,27 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="porcelain">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>EdgeDrop — Minimalist, Offline Desktop File Compression</title>
-  <meta name="description" content="A quiet desktop side-notch for macOS, Windows, and Linux that shrinks photos, PDFs, Office documents, video, and audio to your exact target size entirely on your device.">
-  
+  <meta name="description"
+    content="A quiet desktop side-notch for macOS, Windows, and Linux that shrinks photos, PDFs, Office documents, video, and audio to your exact target size entirely on your device.">
+
   <!-- OpenGraph Metadata -->
   <meta property="og:title" content="EdgeDrop — Offline Desktop File Compression">
-  <meta property="og:description" content="A quiet desktop side-notch that shrinks files to exact target sizes with zero cloud uploads.">
+  <meta property="og:description"
+    content="A quiet desktop side-notch that shrinks files to exact target sizes with zero cloud uploads.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://block-plant.github.io/edgedrop/">
-  
+
   <!-- Inline SVG Favicon (Zero External Network Requests) -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141518'/%3E%3Crect x='26' y='8' width='4' height='16' rx='2' fill='%232DD4BF'/%3E%3Cpath d='M14 10v10m-3-3 3 3 3-3' stroke='%23FAF9F5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-  
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141518'/%3E%3Crect x='26' y='8' width='4' height='16' rx='2' fill='%232DD4BF'/%3E%3Cpath d='M14 10v10m-3-3 3 3 3-3' stroke='%23FAF9F5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
   <!-- ========================================================================= -->
@@ -26,9 +31,10 @@
     <div class="nav-container">
       <a href="#" class="brand-link" aria-label="EdgeDrop Home">
         <svg class="brand-emblem" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <rect width="24" height="24" rx="6" fill="currentColor"/>
-          <rect x="20" y="6" width="2.5" height="12" rx="1.25" fill="#2DD4BF"/>
-          <path d="M10.5 7.5v7m-2.5-2.5 2.5 2.5 2.5-2.5" stroke="#FAF9F5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect width="24" height="24" rx="6" fill="currentColor" />
+          <rect x="20" y="6" width="2.5" height="12" rx="1.25" fill="#2DD4BF" />
+          <path d="M10.5 7.5v7m-2.5-2.5 2.5 2.5 2.5-2.5" stroke="#FAF9F5" stroke-width="1.6" stroke-linecap="round"
+            stroke-linejoin="round" />
         </svg>
         <span class="brand-name">EdgeDrop</span>
       </a>
@@ -37,22 +43,28 @@
         <a href="#craft" class="nav-item">How it works</a>
         <a href="#specs" class="nav-item">Formats</a>
         <a href="#security" class="nav-item">Security</a>
-        <a href="https://github.com/block-plant/edgedrop" target="_blank" rel="noopener noreferrer" class="nav-item nav-github">
+        <a href="https://github.com/block-plant/edgedrop" target="_blank" rel="noopener noreferrer"
+          class="nav-item nav-github">
           <span>GitHub</span>
-          <svg class="external-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M7 17L17 7M7 7h10v10"/>
+          <svg class="external-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 17L17 7M7 7h10v10" />
           </svg>
         </a>
       </nav>
 
       <div class="nav-actions">
-        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle site color mode" title="Toggle Porcelain / Obsidian theme">
-          <svg class="theme-icon icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle site color mode"
+          title="Toggle Porcelain / Obsidian theme">
+          <svg class="theme-icon icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
           </svg>
-          <svg class="theme-icon icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+          <svg class="theme-icon icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
           </svg>
           <span class="theme-label" id="theme-label-text">Porcelain</span>
         </button>
@@ -66,7 +78,7 @@
     <!-- ======================================================================= -->
     <section class="hero-section">
       <div class="layout-container hero-grid">
-        
+
         <!-- Left Editorial Column -->
         <div class="hero-copy">
           <div class="eyebrow-badge">
@@ -77,15 +89,18 @@
           <h1 class="hero-headline">Drop a file.<br>Pick a size. Done.</h1>
 
           <p class="hero-subheadline">
-            A quiet desktop side-notch that shrinks photos, PDFs, Office docs, video, and audio to your exact target size &mdash; entirely on your machine.
+            A quiet desktop side-notch that shrinks photos, PDFs, Office docs, video, and audio to your exact target
+            size &mdash; entirely on your machine.
           </p>
 
           <!-- Smart OS-Aware Download Block -->
           <div class="download-block" id="download-block">
             <!-- Populated dynamically via app.js -->
-            <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg" id="primary-cta-btn" class="primary-btn">
-              <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg"
+              id="primary-cta-btn" class="primary-btn">
+              <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
               </svg>
               <span id="primary-cta-label">Download for macOS</span>
               <span class="btn-subtext" id="primary-cta-subtext">Apple Silicon &middot; .dmg</span>
@@ -94,12 +109,14 @@
             <!-- Mobile notice container (active on iOS) -->
             <div id="mobile-notice-box" class="mobile-notice-box" style="display: none;">
               <p class="mobile-notice-text">
-                EdgeDrop is a desktop app for macOS, Windows &amp; Linux. Select an installer below or copy this link to open on your computer:
+                EdgeDrop is a desktop app for macOS, Windows &amp; Linux. Select an installer below or copy this link to
+                open on your computer:
               </p>
               <button id="copy-page-link-btn" class="secondary-chip-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
                 <span id="copy-link-text">Copy link to clipboard</span>
               </button>
@@ -108,21 +125,28 @@
             <!-- Secondary Links Row -->
             <div class="secondary-downloads" id="secondary-downloads">
               <span class="sec-label">Direct downloads:</span>
-              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg" class="sec-link" id="link-mac">macOS</a>
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg"
+                class="sec-link" id="link-mac">macOS</a>
               <span class="sec-sep">&middot;</span>
-              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64.exe" class="sec-link" id="link-win">Windows</a>
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64.exe"
+                class="sec-link" id="link-win">Windows</a>
               <span class="sec-sep">&middot;</span>
-              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64-Portable.zip" class="sec-link" id="link-portable">Portable .zip</a>
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64-Portable.zip"
+                class="sec-link" id="link-portable">Portable .zip</a>
               <span class="sec-sep">&middot;</span>
-              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Linux-x86_64.AppImage" class="sec-link" id="link-linux">Linux</a>
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Linux-x86_64.AppImage"
+                class="sec-link" id="link-linux">Linux</a>
               <span class="sec-sep">&middot;</span>
-              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Android.apk" class="sec-link" id="link-android">Android</a>
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Android.apk"
+                class="sec-link" id="link-android">Android</a>
               <span class="sec-sep">&middot;</span>
-              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS.txt" class="sec-link" id="link-checksums">SHA256</a>
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS.txt" class="sec-link"
+                id="link-checksums">SHA256</a>
             </div>
 
             <p class="reassurance-text">
-              Free &amp; open source &middot; No account &middot; No uploads &middot; <a href="#first-launch-guide" class="sec-link">First-launch tip</a>
+              Free &amp; open source &middot; No account &middot; No uploads &middot; <a href="#first-launch-guide"
+                class="sec-link">First-launch tip</a>
             </p>
           </div>
         </div>
@@ -130,7 +154,7 @@
         <!-- Right Interactive Simulation Column -->
         <div class="hero-playground">
           <div class="desktop-canvas-frame" id="desktop-frame">
-            
+
             <!-- Simulated Desktop Canvas -->
             <div class="desktop-viewport" id="desktop-viewport" data-wallpaper="alpine">
               <!-- Top bar watermark -->
@@ -141,9 +165,10 @@
 
               <!-- Interactive Simulated Notch Component -->
               <div class="sim-notch-wrapper" id="sim-notch-wrapper" data-edge="right" data-vibe="adaptive">
-                
+
                 <!-- Notch Drag & Dock Handle -->
-                <button class="sim-notch-handle" id="notch-drag-handle" aria-label="Drag EdgeDrop notch across screen edges" title="Drag to snap to opposite edge">
+                <button class="sim-notch-handle" id="notch-drag-handle"
+                  aria-label="Drag EdgeDrop notch across screen edges" title="Drag to snap to opposite edge">
                   <span class="handle-pill"></span>
                 </button>
 
@@ -158,20 +183,25 @@
 
                     <!-- Working 4 Vibe Dots -->
                     <div class="vibe-picker" role="radiogroup" aria-label="Notch theme vibes">
-                      <button class="vibe-dot vibe-adaptive active" data-vibe="adaptive" role="radio" aria-checked="true" aria-label="Adaptive Vibe" title="Adaptive: Match desktop wallpaper"></button>
-                      <button class="vibe-dot vibe-obsidian" data-vibe="obsidian" role="radio" aria-checked="false" aria-label="Obsidian Vibe" title="Obsidian: Deep dark"></button>
-                      <button class="vibe-dot vibe-porcelain" data-vibe="porcelain" role="radio" aria-checked="false" aria-label="Porcelain Vibe" title="Porcelain: Ceramic light"></button>
-                      <button class="vibe-dot vibe-mist" data-vibe="mist" role="radio" aria-checked="false" aria-label="Mist Vibe" title="Mist: Slate gray"></button>
+                      <button class="vibe-dot vibe-adaptive active" data-vibe="adaptive" role="radio"
+                        aria-checked="true" aria-label="Adaptive Vibe"
+                        title="Adaptive: Match desktop wallpaper"></button>
+                      <button class="vibe-dot vibe-obsidian" data-vibe="obsidian" role="radio" aria-checked="false"
+                        aria-label="Obsidian Vibe" title="Obsidian: Deep dark"></button>
+                      <button class="vibe-dot vibe-porcelain" data-vibe="porcelain" role="radio" aria-checked="false"
+                        aria-label="Porcelain Vibe" title="Porcelain: Ceramic light"></button>
+                      <button class="vibe-dot vibe-mist" data-vibe="mist" role="radio" aria-checked="false"
+                        aria-label="Mist Vibe" title="Mist: Slate gray"></button>
                     </div>
                   </div>
 
                   <!-- Dynamic Notch Content Body -->
                   <div class="notch-body">
-                    
+
                     <!-- View 1: Configuration / Sample Selection -->
                     <div class="notch-view view-config active" id="notch-view-config">
                       <div class="sample-chips-label">Try a sample file:</div>
-                      
+
                       <div class="sample-chips-group" role="radiogroup" aria-label="Sample test files">
                         <button class="sample-chip active" data-sample="pdf" role="radio" aria-checked="true">
                           <span class="chip-name">Resume_Portfolio.pdf</span>
@@ -194,7 +224,8 @@
                         </div>
                         <div class="target-pills" role="radiogroup" aria-label="Target ceiling selection">
                           <button class="size-pill" data-size="200" role="radio" aria-checked="false">200 KB</button>
-                          <button class="size-pill active" data-size="500" role="radio" aria-checked="true">500 KB</button>
+                          <button class="size-pill active" data-size="500" role="radio" aria-checked="true">500
+                            KB</button>
                           <button class="size-pill" data-size="1000" role="radio" aria-checked="false">1 MB</button>
                         </div>
                       </div>
@@ -221,8 +252,9 @@
                       <div class="result-stats">
                         <div class="result-size-row">
                           <span class="res-old-size" id="res-old-display">1.60 MB</span>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
                           </svg>
                           <span class="res-new-size" id="res-new-display">468 KB</span>
                           <span class="res-badge" id="res-pct-badge">-71%</span>
@@ -234,13 +266,14 @@
 
                       <!-- Draggable Output Handle -->
                       <div class="drag-out-pill" title="Drag directly into any browser or folder">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                          <circle cx="9" cy="12" r="1"/>
-                          <circle cx="9" cy="5" r="1"/>
-                          <circle cx="9" cy="19" r="1"/>
-                          <circle cx="15" cy="12" r="1"/>
-                          <circle cx="15" cy="5" r="1"/>
-                          <circle cx="15" cy="19" r="1"/>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <circle cx="9" cy="12" r="1" />
+                          <circle cx="9" cy="5" r="1" />
+                          <circle cx="9" cy="19" r="1" />
+                          <circle cx="15" cy="12" r="1" />
+                          <circle cx="15" cy="5" r="1" />
+                          <circle cx="15" cy="19" r="1" />
                         </svg>
                         <span id="drag-pill-label">Resume_Portfolio.pdf</span>
                       </div>
@@ -259,9 +292,12 @@
             <div class="canvas-controls">
               <div class="wallpaper-selector">
                 <span class="wp-label">Wallpaper:</span>
-                <button class="wp-swatch wp-alpine active" data-wp="alpine" title="Alpine Sky" aria-label="Alpine Sky wallpaper"></button>
-                <button class="wp-swatch wp-pines" data-wp="pines" title="Midnight Pines" aria-label="Midnight Pines wallpaper"></button>
-                <button class="wp-swatch wp-sand" data-wp="sand" title="Warm Sand" aria-label="Warm Sand wallpaper"></button>
+                <button class="wp-swatch wp-alpine active" data-wp="alpine" title="Alpine Sky"
+                  aria-label="Alpine Sky wallpaper"></button>
+                <button class="wp-swatch wp-pines" data-wp="pines" title="Midnight Pines"
+                  aria-label="Midnight Pines wallpaper"></button>
+                <button class="wp-swatch wp-sand" data-wp="sand" title="Warm Sand"
+                  aria-label="Warm Sand wallpaper"></button>
               </div>
               <div class="canvas-caption">
                 Drag the notch across edges, switch vibes, or test a sample file.
@@ -283,7 +319,8 @@
           <span class="section-kicker">Designed for Focus</span>
           <h2 class="section-title">Built to stay out of your way.</h2>
           <p class="section-intro">
-            No system trays full of bloat. No popups asking for subscriptions. Just an edge-docked utility that appears when needed and retreats when you are done.
+            No system trays full of bloat. No popups asking for subscriptions. Just an edge-docked utility that appears
+            when needed and retreats when you are done.
           </p>
         </div>
 
@@ -292,7 +329,8 @@
             <span class="cell-num">01</span>
             <h3 class="cell-title">Magnetic edge docking</h3>
             <p class="cell-body">
-              Rests flush on your left or right screen border as a 14px discreet pill. Retracts automatically when you switch apps, scroll, or switch virtual desktops. Opens smoothly the instant you drag a file toward it.
+              Rests flush on your left or right screen border as a 14px discreet pill. Retracts automatically when you
+              switch apps, scroll, or switch virtual desktops. Opens smoothly the instant you drag a file toward it.
             </p>
           </div>
 
@@ -300,7 +338,9 @@
             <span class="cell-num">02</span>
             <h3 class="cell-title">Adaptive wallpaper tinting</h3>
             <p class="cell-body">
-              Reads your desktop background directly via native OS window APIs without requesting screen-recording permissions. Clamps color saturation and luminance dynamically so UI text remains legible in every lighting condition.
+              Reads your desktop background directly via native OS window APIs without requesting screen-recording
+              permissions. Clamps color saturation and luminance dynamically so UI text remains legible in every
+              lighting condition.
             </p>
           </div>
 
@@ -308,7 +348,8 @@
             <span class="cell-num">03</span>
             <h3 class="cell-title">Honest target-size math</h3>
             <p class="cell-body">
-              Never re-encodes a file that is already under your target ceiling. Uses high-precision binary search on encoding quality, stops at the visual clarity threshold, and explains size ceilings in plain English.
+              Never re-encodes a file that is already under your target ceiling. Uses high-precision binary search on
+              encoding quality, stops at the visual clarity threshold, and explains size ceilings in plain English.
             </p>
           </div>
 
@@ -316,7 +357,8 @@
             <span class="cell-num">04</span>
             <h3 class="cell-title">Runs only when you want it</h3>
             <p class="cell-body">
-              Zero login items forced on installation. Single-instance launcher isolated to the current user via secure local IPC. Zero background telemetry pingbacks and one-click clean quit.
+              Zero login items forced on installation. Single-instance launcher isolated to the current user via secure
+              local IPC. Zero background telemetry pingbacks and one-click clean quit.
             </p>
           </div>
         </div>
@@ -339,10 +381,14 @@
         <!-- Segmented Tab Bar -->
         <div class="spec-tabs-wrapper">
           <div class="spec-segmented-tabs" role="tablist" aria-label="Format specification categories">
-            <button class="spec-tab active" data-spec="photos" role="tab" aria-selected="true" aria-controls="spec-panel">Photos</button>
-            <button class="spec-tab" data-spec="pdf" role="tab" aria-selected="false" aria-controls="spec-panel">PDF Documents</button>
-            <button class="spec-tab" data-spec="office" role="tab" aria-selected="false" aria-controls="spec-panel">Office Files</button>
-            <button class="spec-tab" data-spec="media" role="tab" aria-selected="false" aria-controls="spec-panel">Video &amp; Audio</button>
+            <button class="spec-tab active" data-spec="photos" role="tab" aria-selected="true"
+              aria-controls="spec-panel">Photos</button>
+            <button class="spec-tab" data-spec="pdf" role="tab" aria-selected="false" aria-controls="spec-panel">PDF
+              Documents</button>
+            <button class="spec-tab" data-spec="office" role="tab" aria-selected="false"
+              aria-controls="spec-panel">Office Files</button>
+            <button class="spec-tab" data-spec="media" role="tab" aria-selected="false" aria-controls="spec-panel">Video
+              &amp; Audio</button>
           </div>
         </div>
 
@@ -352,7 +398,9 @@
             <!-- Populated via app.js -->
             <h3 class="spec-name" id="spec-title">Photos &amp; Raster Graphics</h3>
             <p class="spec-prose" id="spec-prose">
-              Combines high-precision binary search quality tuning for JPEG and WebP with indexed palette quantization for PNG. Inspects the visual entropy of images to stop compression before blocking artifacts appear. Automatically scrubs GPS location coordinates and camera serial numbers upon export.
+              Combines high-precision binary search quality tuning for JPEG and WebP with indexed palette quantization
+              for PNG. Inspects the visual entropy of images to stop compression before blocking artifacts appear.
+              Automatically scrubs GPS location coordinates and camera serial numbers upon export.
             </p>
           </div>
 
@@ -387,7 +435,8 @@
           <span class="section-kicker">Offline Architecture</span>
           <h2 class="section-title">Your files never leave your desk.</h2>
           <p class="section-intro">
-            EdgeDrop is compiled in pure C++20 with zero network code. Every untrusted file passes through strict parser guards before a single byte is written.
+            EdgeDrop is compiled in pure C++20 with zero network code. Every untrusted file passes through strict parser
+            guards before a single byte is written.
           </p>
         </div>
 
@@ -396,7 +445,8 @@
             <span class="sec-tag">ZERO NETWORK</span>
             <div class="sec-detail">
               <strong class="sec-heading">Completely Air-Gapped Operation</strong>
-              <p class="sec-desc">No HTTP client, no analytics pingbacks, no update check queries. The app operates identical on a plane with Wi-Fi disabled.</p>
+              <p class="sec-desc">No HTTP client, no analytics pingbacks, no update check queries. The app operates
+                identical on a plane with Wi-Fi disabled.</p>
             </div>
           </div>
 
@@ -404,7 +454,8 @@
             <span class="sec-tag">PARSER GUARDS</span>
             <div class="sec-detail">
               <strong class="sec-heading">Resource Exhaustion &amp; Traversal Defense</strong>
-              <p class="sec-desc">Zip Slip directory traversal rejection, Zip Bomb mitigation (100:1 / 500 MB inflation ceiling), 100 MP image bomb limits, and symlink read blocking.</p>
+              <p class="sec-desc">Zip Slip directory traversal rejection, Zip Bomb mitigation (100:1 / 500 MB inflation
+                ceiling), 100 MP image bomb limits, and symlink read blocking.</p>
             </div>
           </div>
 
@@ -412,7 +463,8 @@
             <span class="sec-tag">SANDBOX RUNNER</span>
             <div class="sec-detail">
               <strong class="sec-heading">Isolated Subprocess Execution</strong>
-              <p class="sec-desc">Subprocesses execute strictly via direct argv vectors with no shell interpreter. Ghostscript runs with -dSAFER; FFmpeg restricts protocols to file,pipe.</p>
+              <p class="sec-desc">Subprocesses execute strictly via direct argv vectors with no shell interpreter.
+                Ghostscript runs with -dSAFER; FFmpeg restricts protocols to file,pipe.</p>
             </div>
           </div>
 
@@ -420,7 +472,8 @@
             <span class="sec-tag">PRIVACY BY DEFAULT</span>
             <div class="sec-detail">
               <strong class="sec-heading">EXIF GPS Stripping &amp; Owner-Only Files</strong>
-              <p class="sec-desc">Strips camera serial numbers and location tags from images. Intermediate temp files use owner-only permissions (0600) and unlink on scope exit.</p>
+              <p class="sec-desc">Strips camera serial numbers and location tags from images. Intermediate temp files
+                use owner-only permissions (0600) and unlink on scope exit.</p>
             </div>
           </div>
 
@@ -428,7 +481,8 @@
             <span class="sec-tag">HARDENED BINARIES</span>
             <div class="sec-detail">
               <strong class="sec-heading">Defense-in-Depth Compiler Flags</strong>
-              <p class="sec-desc">Compiled with stack-protector-strong, _FORTIFY_SOURCE=2, ASLR, DEP, and CFG guards. Machine paths are stripped via file-prefix-map.</p>
+              <p class="sec-desc">Compiled with stack-protector-strong, _FORTIFY_SOURCE=2, ASLR, DEP, and CFG guards.
+                Machine paths are stripped via file-prefix-map.</p>
             </div>
           </div>
         </div>
@@ -439,13 +493,14 @@
             <span class="checksum-title">Verify download integrity independently</span>
             <span class="checksum-badge">SHA-256</span>
           </div>
-          
+
           <div class="code-snippet-row">
             <code class="code-line" id="checksum-command-code">shasum -a 256 -c SHA256SUMS.txt</code>
             <button class="copy-btn" id="copy-checksum-btn" aria-label="Copy verification command">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
               </svg>
               <span id="copy-btn-text">Copy</span>
             </button>
@@ -463,16 +518,19 @@
         <div class="callout-card" id="first-launch-guide">
           <div class="callout-header">
             <div class="callout-icon-wrap">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
             <div>
               <h3 class="callout-title">A quick note before you open EdgeDrop</h3>
               <p class="callout-lead">
-                EdgeDrop is an independent, 100% offline utility &mdash; your files never leave your device. Because it is currently distributed as an indie build without a commercial Apple or Microsoft signing certificate ($99&ndash;$499/year), your system may show a standard one-time prompt on first launch:
+                EdgeDrop is an independent, 100% offline utility &mdash; your files never leave your device. Because it
+                is currently distributed as an indie build without a commercial Apple or Microsoft signing certificate
+                ($99&ndash;$499/year), your system may show a standard one-time prompt on first launch:
               </p>
             </div>
           </div>
@@ -488,7 +546,8 @@
           <div class="notice-tab-content">
             <div class="notice-panel active" id="notice-panel-mac">
               <p class="notice-instruction-text">
-                Apple Gatekeeper may display <em>&ldquo;EdgeDrop cannot be opened because Apple cannot check it for malicious software&rdquo;</em> on first run.
+                Apple Gatekeeper may display <em>&ldquo;EdgeDrop cannot be opened because Apple cannot check it for
+                  malicious software&rdquo;</em> on first run.
               </p>
               <ol class="notice-steps">
                 <li>Right-click (or Control-click) <strong>EdgeDrop.app</strong> in your Applications folder.</li>
@@ -499,7 +558,8 @@
 
             <div class="notice-panel" id="notice-panel-win">
               <p class="notice-instruction-text">
-                Windows SmartScreen may display <em>&ldquo;Windows protected your PC&rdquo;</em> for new community releases.
+                Windows SmartScreen may display <em>&ldquo;Windows protected your PC&rdquo;</em> for new community
+                releases.
               </p>
               <ol class="notice-steps">
                 <li>Click <strong>&ldquo;More info&rdquo;</strong> in the dialog.</li>
@@ -521,18 +581,21 @@
 
             <div class="notice-panel" id="notice-panel-android">
               <p class="notice-instruction-text">
-                Android may display <em>&ldquo;File might be harmful&rdquo;</em> or ask for permission to install apps outside Google Play:
+                Android may display <em>&ldquo;File might be harmful&rdquo;</em> or ask for permission to install apps
+                outside Google Play:
               </p>
               <ol class="notice-steps">
                 <li>Tap <strong>Download anyway</strong> in the browser prompt.</li>
                 <li>Open the downloaded <strong>.apk</strong> from notifications or your Downloads folder.</li>
-                <li>When prompted, tap <strong>Settings</strong> &rarr; enable <strong>&ldquo;Allow from this source&rdquo;</strong>, then tap <strong>Install</strong>.</li>
+                <li>When prompted, tap <strong>Settings</strong> &rarr; enable <strong>&ldquo;Allow from this
+                    source&rdquo;</strong>, then tap <strong>Install</strong>.</li>
               </ol>
             </div>
           </div>
 
           <div class="callout-footer">
-            Every release publishes transparent SHA-256 checksums and GitHub build provenance attestation so you can verify your download independently.
+            Every release publishes transparent SHA-256 checksums and GitHub build provenance attestation so you can
+            verify your download independently.
           </div>
         </div>
       </div>
@@ -547,31 +610,41 @@
       <div class="footer-brand-col">
         <div class="footer-brand">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <rect width="24" height="24" rx="5" fill="currentColor"/>
-            <rect x="20" y="6" width="2.5" height="12" rx="1.25" fill="#2DD4BF"/>
+            <rect width="24" height="24" rx="5" fill="currentColor" />
+            <rect x="20" y="6" width="2.5" height="12" rx="1.25" fill="#2DD4BF" />
           </svg>
           <span class="footer-brand-title">EdgeDrop</span>
         </div>
-        <p class="footer-tagline">Offline file compression, crafted in C++20 &amp; Qt 6.</p>
-        <p class="footer-meta">Open-source software under the MIT License.</p>
+        <p class="footer-tagline">Offline file compression, crafted in C++20.</p>
+        <p class="footer-meta">Open-source software.</p>
+        <p class="footer-meta">Made by Ayush Kunwar</p>
       </div>
 
       <div class="footer-links-col">
         <div class="footer-links-group">
           <span class="footer-group-title">Downloads</span>
-          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg" id="footer-link-mac">macOS (.dmg)</a>
-          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64.exe" id="footer-link-win">Windows (.exe)</a>
-          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64-Portable.zip" id="footer-link-portable">Windows (.zip)</a>
-          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Linux-x86_64.AppImage" id="footer-link-linux">Linux (.AppImage)</a>
-          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Android.apk" id="footer-link-android">Android (.apk)</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg"
+            id="footer-link-mac">macOS (.dmg)</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64.exe"
+            id="footer-link-win">Windows (.exe)</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64-Portable.zip"
+            id="footer-link-portable">Windows (.zip)</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Linux-x86_64.AppImage"
+            id="footer-link-linux">Linux (.AppImage)</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Android.apk"
+            id="footer-link-android">Android (.apk)</a>
         </div>
 
         <div class="footer-links-group">
           <span class="footer-group-title">Integrity &amp; Code</span>
-          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS.txt" id="footer-link-checksums">SHA256SUMS.txt</a>
-          <a href="https://github.com/block-plant/EdgeDrop/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">Security Policy</a>
-          <a href="https://github.com/block-plant/EdgeDrop/releases" target="_blank" rel="noopener noreferrer">All Releases</a>
-          <a href="https://github.com/block-plant/EdgeDrop" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS.txt"
+            id="footer-link-checksums">SHA256SUMS.txt</a>
+          <a href="https://github.com/block-plant/EdgeDrop/blob/main/SECURITY.md" target="_blank"
+            rel="noopener noreferrer">Security Policy</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases" target="_blank" rel="noopener noreferrer">All
+            Releases</a>
+          <a href="https://github.com/block-plant/EdgeDrop" target="_blank" rel="noopener noreferrer">Source on
+            GitHub</a>
         </div>
       </div>
     </div>
@@ -579,4 +652,5 @@
 
   <script src="app.js"></script>
 </body>
+
 </html>
