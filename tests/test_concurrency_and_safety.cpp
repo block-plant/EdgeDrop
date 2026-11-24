@@ -1,5 +1,6 @@
 #include "edgedrop/compressor_router.hpp"
 #include "edgedrop/format_detector.hpp"
+#include "edgedrop/media_compressor.hpp"
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -123,6 +124,56 @@ int main() {
         for (const auto& p : srcPaths) {
             std::error_code ec;
             std::filesystem::remove(p, ec);
+        }
+    }
+
+    // ── Test 4 & 5: Audio Polish & Edge Cases (Album-Art & WAV Transcoding) ──
+    std::string ffmpegBin = MediaCompressor::locateFfmpeg();
+    std::string ffprobeBin = MediaCompressor::locateFfprobe();
+    if (!ffmpegBin.empty() && !ffprobeBin.empty()) {
+        // Test 4: MP3 with embedded album art (attached_pic)
+        auto mp3Path = tmpDir / "test_album_art.mp3";
+        std::string genMp3Cmd = "\"" + ffmpegBin + "\" -y -v quiet -f lavfi -i \"sine=frequency=440:duration=2\" -f lavfi -i \"color=c=blue:s=200x200:d=2\" -map 0:a -map 1:v -c:a libmp3lame -b:a 192k -c:v mjpeg -disposition:v:0 attached_pic -id3v2_version 3 \"" + mp3Path.string() + "\"";
+        int genRet = std::system(genMp3Cmd.c_str());
+        if (genRet == 0 && std::filesystem::exists(mp3Path)) {
+            JobRequest req;
+            req.inputFilePath = mp3Path;
+            req.outputDirectory = tmpDir;
+            req.targetBytes = 25 * 1024;
+            req.detectedFormat = DetectedFormat::MP3;
+
+            JobResult res = CompressorRouter::route(req);
+            check("MP3 with cover art routes and compresses successfully", res.success);
+            check("MP3 output format is MP3 (not video)", res.outputFormat == "MP3");
+            check("MP3 output file exists", std::filesystem::exists(res.outputFilePath));
+            check("MP3 output is within target size", res.outputSizeBytes <= 25 * 1024);
+
+            std::error_code ec;
+            std::filesystem::remove(res.outputFilePath, ec);
+            std::filesystem::remove(mp3Path, ec);
+        }
+
+        // Test 5: WAV Transcoding to M4A under target size
+        auto wavPath = tmpDir / "test_audio.wav";
+        std::string genWavCmd = "\"" + ffmpegBin + "\" -y -v quiet -f lavfi -i \"sine=frequency=880:duration=2\" -c:a pcm_s16le \"" + wavPath.string() + "\"";
+        int wavRet = std::system(genWavCmd.c_str());
+        if (wavRet == 0 && std::filesystem::exists(wavPath)) {
+            JobRequest req;
+            req.inputFilePath = wavPath;
+            req.outputDirectory = tmpDir;
+            req.targetBytes = 20 * 1024;
+            req.detectedFormat = DetectedFormat::WAV;
+
+            JobResult res = CompressorRouter::route(req);
+            check("WAV compresses successfully", res.success);
+            check("WAV converts to M4A format", res.outputFormat == "M4A");
+            check("WAV output file extension is .m4a", res.outputFilePath.extension() == ".m4a");
+            check("WAV output is within target size", res.outputSizeBytes <= 20 * 1024);
+            check("WAV floor note explains conversion", res.floorNote.find("Converted WAV -> M4A") != std::string::npos);
+
+            std::error_code ec;
+            std::filesystem::remove(res.outputFilePath, ec);
+            std::filesystem::remove(wavPath, ec);
         }
     }
 

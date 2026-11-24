@@ -9,15 +9,20 @@
     content="A quiet desktop side-notch for macOS, Windows, and Linux that shrinks photos, PDFs, Office documents, video, and audio to your exact target size entirely on your device.">
 
   <!-- OpenGraph Metadata -->
-  <meta property="og:title" content="EdgeDrop — Offline Desktop File Compression">
+  <meta property="og:title" content="EdgeDrop — Minimalist, Offline Desktop File Compression">
   <meta property="og:description"
-    content="A quiet desktop side-notch that shrinks files to exact target sizes with zero cloud uploads.">
+    content="A quiet desktop side-notch that shrinks photos, PDFs, Office docs, video, and audio to your exact target size entirely on your device.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://block-plant.github.io/edgedrop/">
 
-  <!-- Inline SVG Favicon (Zero External Network Requests) -->
-  <link rel="icon" type="image/svg+xml"
-    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23141518'/%3E%3Crect x='26' y='8' width='4' height='16' rx='2' fill='%232DD4BF'/%3E%3Cpath d='M14 10v10m-3-3 3 3 3-3' stroke='%23FAF9F5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <!-- Twitter Metadata -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="EdgeDrop — Minimalist, Offline Desktop File Compression">
+  <meta name="twitter:description"
+    content="A quiet desktop side-notch that shrinks photos, PDFs, Office docs, video, and audio to your exact target size entirely on your device.">
+
+  <!-- Favicon (Zero-Collision Scalable Vector with Dark Mode Support) -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -30,11 +35,16 @@
   <header class="site-header">
     <div class="nav-container">
       <a href="#" class="brand-link" aria-label="EdgeDrop Home">
-        <svg class="brand-emblem" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <rect width="24" height="24" rx="6" fill="currentColor" />
-          <rect x="20" y="6" width="2.5" height="12" rx="1.25" fill="#2DD4BF" />
-          <path d="M10.5 7.5v7m-2.5-2.5 2.5 2.5 2.5-2.5" stroke="#FAF9F5" stroke-width="1.6" stroke-linecap="round"
-            stroke-linejoin="round" />
+        <svg class="brand-emblem" width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <mask id="edgedrop-logo-mask-header">
+              <rect width="32" height="32" fill="white" />
+              <rect x="7" y="8" width="18" height="3.5" rx="1.75" fill="black" />
+              <rect x="11.5" y="14.25" width="13.5" height="3.5" rx="1.75" fill="black" />
+              <rect x="17" y="20.5" width="8" height="3.5" rx="1.75" fill="black" />
+            </mask>
+          </defs>
+          <rect x="2" y="2" width="28" height="28" rx="7.5" fill="currentColor" mask="url(#edgedrop-logo-mask-header)" />
         </svg>
         <span class="brand-name">EdgeDrop</span>
       </a>
@@ -128,7 +138,7 @@
               <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg"
                 class="sec-link" id="link-mac">macOS</a>
               <span class="sec-sep">&middot;</span>
-              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64.exe"
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64-Setup.exe"
                 class="sec-link" id="link-win">Windows</a>
               <span class="sec-sep">&middot;</span>
               <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64-Portable.zip"
@@ -137,10 +147,10 @@
               <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Linux-x86_64.AppImage"
                 class="sec-link" id="link-linux">Linux</a>
               <span class="sec-sep">&middot;</span>
-              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Android.apk"
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/app-debug.apk"
                 class="sec-link" id="link-android">Android</a>
               <span class="sec-sep">&middot;</span>
-              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS.txt" class="sec-link"
+              <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS" class="sec-link"
                 id="link-checksums">SHA256</a>
             </div>
 
@@ -184,14 +194,14 @@
                     <!-- Working 4 Vibe Dots -->
                     <div class="vibe-picker" role="radiogroup" aria-label="Notch theme vibes">
                       <button class="vibe-dot vibe-adaptive active" data-vibe="adaptive" role="radio"
-                        aria-checked="true" aria-label="Adaptive Vibe"
-                        title="Adaptive: Match desktop wallpaper"></button>
+                        aria-checked="true" aria-label="Match wallpaper"
+                        title="Match wallpaper"><span class="vibe-disc" aria-hidden="true"></span></button>
                       <button class="vibe-dot vibe-obsidian" data-vibe="obsidian" role="radio" aria-checked="false"
-                        aria-label="Obsidian Vibe" title="Obsidian: Deep dark"></button>
+                        aria-label="Obsidian" title="Obsidian"><span class="vibe-disc" aria-hidden="true"></span></button>
                       <button class="vibe-dot vibe-porcelain" data-vibe="porcelain" role="radio" aria-checked="false"
-                        aria-label="Porcelain Vibe" title="Porcelain: Ceramic light"></button>
+                        aria-label="Porcelain" title="Porcelain"><span class="vibe-disc" aria-hidden="true"></span></button>
                       <button class="vibe-dot vibe-mist" data-vibe="mist" role="radio" aria-checked="false"
-                        aria-label="Mist Vibe" title="Mist: Slate gray"></button>
+                        aria-label="Mist" title="Mist"><span class="vibe-disc" aria-hidden="true"></span></button>
                     </div>
                   </div>
 
@@ -293,11 +303,13 @@
               <div class="wallpaper-selector">
                 <span class="wp-label">Wallpaper:</span>
                 <button class="wp-swatch wp-alpine active" data-wp="alpine" title="Alpine Sky"
-                  aria-label="Alpine Sky wallpaper"></button>
+                  aria-label="Alpine Sky wallpaper"><span class="wp-disc" aria-hidden="true"></span></button>
                 <button class="wp-swatch wp-pines" data-wp="pines" title="Midnight Pines"
-                  aria-label="Midnight Pines wallpaper"></button>
+                  aria-label="Midnight Pines wallpaper"><span class="wp-disc" aria-hidden="true"></span></button>
                 <button class="wp-swatch wp-sand" data-wp="sand" title="Warm Sand"
-                  aria-label="Warm Sand wallpaper"></button>
+                  aria-label="Warm Sand wallpaper"><span class="wp-disc" aria-hidden="true"></span></button>
+                <button class="wp-swatch wp-graphite" data-wp="graphite" title="Cool Graphite"
+                  aria-label="Cool Graphite wallpaper"><span class="wp-disc" aria-hidden="true"></span></button>
               </div>
               <div class="canvas-caption">
                 Drag the notch across edges, switch vibes, or test a sample file.
@@ -495,7 +507,7 @@
           </div>
 
           <div class="code-snippet-row">
-            <code class="code-line" id="checksum-command-code">shasum -a 256 -c SHA256SUMS.txt</code>
+            <code class="code-line" id="checksum-command-code">shasum -a 256 -c SHA256SUMS</code>
             <button class="copy-btn" id="copy-checksum-btn" aria-label="Copy verification command">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -550,9 +562,18 @@
                   malicious software&rdquo;</em> on first run.
               </p>
               <ol class="notice-steps">
-                <li>Right-click (or Control-click) <strong>EdgeDrop.app</strong> in your Applications folder.</li>
-                <li>Choose <strong>Open</strong> from the context menu, then click <strong>Open</strong> again.</li>
-                <li>Or remove quarantine via Terminal: <code>xattr -cr /Applications/EdgeDrop.app</code></li>
+                <li>Open the downloaded <code>.dmg</code> and drag <strong>EdgeDrop.app</strong> into
+                  <strong>Applications</strong>.</li>
+                <li>On first launch, if macOS displays the warning prompt, click <strong>Done</strong>.</li>
+                <li>Go to <strong>System Settings &rarr; Privacy &amp; Security</strong>, scroll down to
+                  <strong>Security</strong>, and click <strong>Open Anyway</strong>.</li>
+                <li>Or bypass quarantine via Terminal:
+                  <div class="modal-code-row">
+                    <code>xattr -cr /Applications/EdgeDrop.app</code>
+                    <button class="copy-inline-btn" data-copy="xattr -cr /Applications/EdgeDrop.app"
+                      aria-label="Copy terminal command">Copy</button>
+                  </div>
+                </li>
               </ol>
             </div>
 
@@ -574,8 +595,16 @@
               </p>
               <ol class="notice-steps">
                 <li>Open your terminal in the directory where the file was downloaded.</li>
-                <li>Execute: <code>chmod +x EdgeDrop-*.AppImage</code></li>
-                <li>Launch via <code>./EdgeDrop-*.AppImage</code> or double-click in your desktop environment.</li>
+                <li>Execute:
+                  <div class="modal-code-row">
+                    <code>chmod +x EdgeDrop-*.AppImage &amp;&amp; ./EdgeDrop-*.AppImage</code>
+                    <button class="copy-inline-btn" data-copy="chmod +x EdgeDrop-*.AppImage && ./EdgeDrop-*.AppImage"
+                      aria-label="Copy terminal command">Copy</button>
+                  </div>
+                </li>
+                <li>Or right-click the <code>.AppImage</code> &rarr; <strong>Properties</strong> &rarr;
+                  <strong>Permissions</strong> &rarr; check <strong>&ldquo;Allow executing file as program&rdquo;</strong>.
+                </li>
               </ol>
             </div>
 
@@ -588,7 +617,7 @@
                 <li>Tap <strong>Download anyway</strong> in the browser prompt.</li>
                 <li>Open the downloaded <strong>.apk</strong> from notifications or your Downloads folder.</li>
                 <li>When prompted, tap <strong>Settings</strong> &rarr; enable <strong>&ldquo;Allow from this
-                    source&rdquo;</strong>, then tap <strong>Install</strong>.</li>
+                    source&rdquo;</strong> (Install unknown apps), then tap <strong>Install</strong>.</li>
               </ol>
             </div>
           </div>
@@ -609,9 +638,16 @@
     <div class="layout-container footer-inner">
       <div class="footer-brand-col">
         <div class="footer-brand">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <rect width="24" height="24" rx="5" fill="currentColor" />
-            <rect x="20" y="6" width="2.5" height="12" rx="1.25" fill="#2DD4BF" />
+          <svg class="footer-emblem" width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <mask id="edgedrop-logo-mask-footer">
+                <rect width="32" height="32" fill="white" />
+                <rect x="7" y="8" width="18" height="3.5" rx="1.75" fill="black" />
+                <rect x="11.5" y="14.25" width="13.5" height="3.5" rx="1.75" fill="black" />
+                <rect x="17" y="20.5" width="8" height="3.5" rx="1.75" fill="black" />
+              </mask>
+            </defs>
+            <rect x="2" y="2" width="28" height="28" rx="7.5" fill="currentColor" mask="url(#edgedrop-logo-mask-footer)" />
           </svg>
           <span class="footer-brand-title">EdgeDrop</span>
         </div>
@@ -625,20 +661,20 @@
           <span class="footer-group-title">Downloads</span>
           <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-macOS-arm64.dmg"
             id="footer-link-mac">macOS (.dmg)</a>
-          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64.exe"
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64-Setup.exe"
             id="footer-link-win">Windows (.exe)</a>
           <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Windows-x64-Portable.zip"
             id="footer-link-portable">Windows (.zip)</a>
           <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Linux-x86_64.AppImage"
             id="footer-link-linux">Linux (.AppImage)</a>
-          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/EdgeDrop-Android.apk"
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/app-debug.apk"
             id="footer-link-android">Android (.apk)</a>
         </div>
 
         <div class="footer-links-group">
           <span class="footer-group-title">Integrity &amp; Code</span>
-          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS.txt"
-            id="footer-link-checksums">SHA256SUMS.txt</a>
+          <a href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS"
+            id="footer-link-checksums">SHA256SUMS</a>
           <a href="https://github.com/block-plant/EdgeDrop/blob/main/SECURITY.md" target="_blank"
             rel="noopener noreferrer">Security Policy</a>
           <a href="https://github.com/block-plant/EdgeDrop/releases" target="_blank" rel="noopener noreferrer">All
@@ -704,7 +740,7 @@
 
         <div id="modal-panel-win" class="notice-panel modal-panel">
           <ol class="notice-steps">
-            <li>Run the downloaded <code>EdgeDrop-Windows-x64.exe</code> installer.</li>
+            <li>Run the downloaded <code>EdgeDrop-Windows-x64-Setup.exe</code> installer.</li>
             <li>When Windows Defender SmartScreen appears (<em>&ldquo;Windows protected your PC&rdquo;</em>), click
               <strong>More info</strong>.</li>
             <li>Click <strong>Run anyway</strong> to complete installation and launch EdgeDrop.</li>
@@ -729,7 +765,7 @@
 
         <div id="modal-panel-android" class="notice-panel modal-panel">
           <ol class="notice-steps">
-            <li>Open the downloaded <code>EdgeDrop-Android.apk</code> on your Android device.</li>
+            <li>Open the downloaded <code>app-debug.apk</code> on your Android device.</li>
             <li>When prompted, tap <strong>Settings</strong> &rarr; enable <strong>&ldquo;Allow from this
                 source&rdquo;</strong> (Install unknown apps).</li>
             <li>Tap <strong>Install</strong>, then tap <strong>Open</strong> to start shrinking files.</li>
@@ -739,11 +775,39 @@
 
       <div class="install-modal-footer">
         <span>Verify download checksums: <a
-            href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS.txt" target="_blank"
-            rel="noopener noreferrer" class="sec-link">SHA256SUMS.txt</a></span>
+            href="https://github.com/block-plant/EdgeDrop/releases/latest/download/SHA256SUMS" target="_blank"
+            rel="noopener noreferrer" class="sec-link">SHA256SUMS</a></span>
       </div>
     </div>
   </div>
+
+  <!-- ========================================================================= -->
+  <!-- Design-Matched Post-Download Notification                                 -->
+  <!-- ========================================================================= -->
+  <aside id="download-notification" class="download-toast" role="status" aria-live="polite" aria-atomic="true" hidden>
+    <div class="toast-inner">
+      <div class="toast-header">
+        <div class="toast-title-group">
+          <svg class="toast-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+          </svg>
+          <h3 class="toast-title" id="toast-title">Downloading EdgeDrop for macOS</h3>
+        </div>
+        <button class="toast-close-btn" id="toast-close-btn" aria-label="Dismiss notification">&times;</button>
+      </div>
+      <p class="toast-message" id="toast-message">
+        Because EdgeDrop isn't code-signed yet, macOS will show a one-time security prompt. We've put the exact 30-second bypass steps right here.
+      </p>
+      <div class="toast-actions">
+        <button class="toast-action-btn" id="toast-action-btn">
+          <span>View install steps</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </aside>
 
   <script src="app.js"></script>
 </body>

@@ -378,17 +378,9 @@ JobResult OfficeCompressor::compress(const JobRequest& req,
         : req.outputDirectory;
     std::filesystem::create_directories(outDir);
 
-    std::string stem = req.inputFilePath.stem().string();
     std::string ext = FormatDetector::outputExtension(req.detectedFormat);
     if (ext.empty()) ext = req.inputFilePath.extension().string();
-
-    std::filesystem::path outPath;
-    int ctr = 0;
-    do {
-        std::string sfx = (ctr == 0) ? "" : " (" + std::to_string(ctr) + ")";
-        outPath = outDir / (stem + "_compressed" + sfx + ext);
-        ++ctr;
-    } while (std::filesystem::exists(outPath));
+    std::filesystem::path outPath = SecurityGuards::generateCompressedOutputPath(req.inputFilePath, outDir, ext);
 
     // ── Pass-Through Guard ────────────────────────────────────────────────────
     if (req.targetBytes > 0 && result.inputSizeBytes <= req.targetBytes) {

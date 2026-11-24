@@ -100,6 +100,8 @@ QtObject {
     readonly property color successSurface: isLightSurface ? "#E6F4EA" : "#0D3320"
     readonly property color warning: "#F59E0B"
     readonly property color danger: "#EF4444"
+    readonly property color error: danger
+    readonly property color errorSurface: isLightSurface ? "#FEE2E2" : "#3B1818"
 
     // Spacing (Airbnb/Apple 8pt rhythm)
     readonly property int spaceXs: 4

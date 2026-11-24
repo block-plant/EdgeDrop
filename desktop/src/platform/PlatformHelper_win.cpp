@@ -58,8 +58,10 @@ void PlatformHelper::configureNativeWindow(QQuickWindow* window,
         g_winAppController = appController;
 
         LONG_PTR exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
-        // WS_EX_TOOLWINDOW hides from Taskbar & Alt+Tab, TOPMOST floats above, NOACTIVATE avoids focus theft
-        exStyle |= WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE;
+        // WS_EX_TOOLWINDOW hides from Taskbar & Alt+Tab, TOPMOST floats above
+        // Exclude WS_EX_NOACTIVATE so target size inputs and text boxes receive keyboard focus properly
+        exStyle &= ~WS_EX_NOACTIVATE;
+        exStyle |= (WS_EX_TOOLWINDOW | WS_EX_TOPMOST);
         SetWindowLongPtr(hwnd, GWL_EXSTYLE, exStyle);
 
         // Strip WS_THICKFRAME and WS_MAXIMIZEBOX to strictly prevent resizing
@@ -117,6 +119,10 @@ void PlatformHelper::copyFileToClipboard(const QString& filePath) {
     auto* mime = new QMimeData();
     mime->setUrls({QUrl::fromLocalFile(filePath)});
     QGuiApplication::clipboard()->setMimeData(mime);
+}
+
+bool PlatformHelper::isWayland() {
+    return false;
 }
 
 void PlatformHelper::lockWindowSize(QQuickWindow* window, int width, int height) {

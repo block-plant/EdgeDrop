@@ -19,6 +19,8 @@ class SettingsManager : public QObject {
     Q_PROPERTY(bool launchAtLogin READ launchAtLogin WRITE setLaunchAtLogin NOTIFY launchAtLoginChanged)
     Q_PROPERTY(bool isPinned READ isPinned WRITE setIsPinned NOTIFY isPinnedChanged)
     Q_PROPERTY(QStringList recentFiles READ recentFiles WRITE setRecentFiles NOTIFY recentFilesChanged)
+    Q_PROPERTY(int customCardWidth READ customCardWidth WRITE setCustomCardWidth NOTIFY customCardSizeChanged)
+    Q_PROPERTY(int customCardHeight READ customCardHeight WRITE setCustomCardHeight NOTIFY customCardSizeChanged)
 
 public:
     explicit SettingsManager(QObject* parent = nullptr);
@@ -54,6 +56,14 @@ public:
     void setRecentFiles(const QStringList& files);
     Q_INVOKABLE void addRecentFile(const QString& filePath);
 
+    [[nodiscard]] int customCardWidth() const { return m_customCardWidth; }
+    void setCustomCardWidth(int width);
+
+    [[nodiscard]] int customCardHeight() const { return m_customCardHeight; }
+    void setCustomCardHeight(int height);
+
+    Q_INVOKABLE void resetCustomCardSize();
+
     Q_INVOKABLE void resetSettings();
 
 signals:
@@ -67,6 +77,7 @@ signals:
     void launchAtLoginChanged(bool enable);
     void isPinnedChanged(bool pinned);
     void recentFilesChanged(const QStringList& files);
+    void customCardSizeChanged();
 
 private:
     void load();
@@ -82,6 +93,8 @@ private:
     bool m_launchAtLogin = false;
     bool m_isPinned = false;
     QStringList m_recentFiles;
+    int m_customCardWidth = 0;
+    int m_customCardHeight = 0;
 };
 
 } // namespace EdgeDrop

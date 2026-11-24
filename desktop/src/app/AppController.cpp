@@ -1,6 +1,7 @@
 #include "AppController.hpp"
 #include "../platform/PlatformHelper.hpp"
 #include <edgedrop/format_detector.hpp>
+#include <edgedrop/media_compressor.hpp>
 #include <QFileInfo>
 #include <QDir>
 #include <QImageReader>
@@ -33,6 +34,37 @@ AppController::AppController(QObject* parent)
             m_recentFiles.append(m);
             if (m_recentFiles.size() >= 3) break;
         }
+    }
+    checkFfmpegAvailability();
+}
+
+bool AppController::isCurrentFileMedia() const {
+    MediaCompressor compressor;
+    return compressor.canHandle(m_detectedFormat);
+}
+
+QString AppController::ffmpegInstallCommand() const {
+#if defined(Q_OS_MACOS) || defined(Q_OS_APPLE)
+    return "brew install ffmpeg";
+#elif defined(Q_OS_WIN)
+    return "winget install Gyan.FFmpeg";
+#else
+    return "sudo apt install ffmpeg";
+#endif
+}
+
+void AppController::checkFfmpegAvailability() {
+    bool available = !MediaCompressor::locateFfmpeg().empty();
+    if (m_hasFfmpeg != available) {
+        m_hasFfmpeg = available;
+        emit ffmpegAvailabilityChanged();
+    }
+}
+
+void AppController::copyToClipboard(const QString& text) {
+    QClipboard* clipboard = QGuiApplication::clipboard();
+    if (clipboard) {
+        clipboard->setText(text);
     }
 }
 
@@ -85,6 +117,7 @@ void AppController::analyzeInputFile(const QString& filePath) {
     }
 
     m_currentFileInfo = fileMap;
+    checkFfmpegAvailability();
     emit currentFileInfoChanged();
 }
 
@@ -105,17 +138,32 @@ void AppController::handleDroppedUrls(const QList<QUrl>& urls) {
         if (url.isLocalFile()) {
             path = url.toLocalFile();
         } else if (url.scheme() == "file") {
-            path = url.path();
+            path = QUrl::fromPercentEncoding(url.path().toUtf8());
 #if defined(Q_OS_WIN)
             if (path.startsWith('/') && path.length() > 2 && path[2] == ':') {
                 path = path.mid(1);
             }
 #endif
         } else {
-            path = url.toString();
+            path = url.toLocalFile();
+            if (path.isEmpty()) {
+                path = QUrl::fromPercentEncoding(url.path().toUtf8());
+            }
+            if (path.isEmpty()) {
+                path = url.toString();
+            }
         }
 
+        path = QDir::fromNativeSeparators(path);
         QFileInfo fi(path);
+        if (!fi.exists()) {
+            QString decoded = QUrl::fromPercentEncoding(path.toUtf8());
+            if (QFile::exists(decoded)) {
+                path = decoded;
+                fi.setFile(path);
+            }
+        }
+
         if (fi.exists() && fi.isFile() && supported.contains(fi.suffix().toLower())) {
             validFiles.append(fi.absoluteFilePath());
         }
@@ -328,6 +376,14 @@ static QString humanizeFloorNote(const std::string& rawNote, bool hitFloor) {
     if (note.contains("ghostscript", Qt::CaseInsensitive)) {
         return QStringLiteral("Saved the best size available. Install Ghostscript for even smaller PDFs.");
     }
+    if (note.contains("converted wav", Qt::CaseInsensitive)) {
+        return note;
+    }
+    if (note.contains("audio bitrate floor", Qt::CaseInsensitive) ||
+        note.contains("audio playback", Qt::CaseInsensitive) ||
+        note.contains("intelligible playback", Qt::CaseInsensitive)) {
+        return QStringLiteral("Made it as small as possible while keeping audio clear.");
+    }
     if (hitFloor || note.contains("floor", Qt::CaseInsensitive) || note.contains("legibility", Qt::CaseInsensitive)) {
         return QStringLiteral("Made it as small as possible while keeping it clear to read.");
     }
@@ -342,7 +398,7 @@ static QString humanizeErrorMessage(const std::string& rawError) {
     if (err.contains("password", Qt::CaseInsensitive) || err.contains("encrypt", Qt::CaseInsensitive)) {
         return QStringLiteral("This PDF is locked with a password. Unlock it first to try again.");
     }
-    if (err.contains("ffmpeg", Qt::CaseInsensitive)) {
+    if (err.contains("ffmpeg", Qt::CaseInsensitive) && !err.contains("pass", Qt::CaseInsensitive)) {
         return QStringLiteral("Install FFmpeg to shrink videos and audio.");
     }
     if (err.contains("ghostscript", Qt::CaseInsensitive)) {
@@ -350,6 +406,9 @@ static QString humanizeErrorMessage(const std::string& rawError) {
     }
     if (err.contains("unsupported", Qt::CaseInsensitive) || err.contains("unknown format", Qt::CaseInsensitive)) {
         return QStringLiteral("This file type isn't supported yet.");
+    }
+    if (err.contains("duration", Qt::CaseInsensitive) || err.contains("probe failed", Qt::CaseInsensitive)) {
+        return QStringLiteral("Could not read media duration. Check that the file is a valid video or audio file.");
     }
     if (err.contains("corrupt", Qt::CaseInsensitive) || err.contains("empty", Qt::CaseInsensitive) ||
         err.contains("could not open", Qt::CaseInsensitive) || err.contains("cannot open", Qt::CaseInsensitive) ||
@@ -368,6 +427,7 @@ void AppController::onJobFinished(const EdgeDrop::JobResult& result) {
 
     if (!result.success) {
         QString inPath = QString::fromStdString(result.inputFilePath.string());
+        qWarning() << "Compression job failed for:" << inPath << "Raw error:" << QString::fromStdString(result.errorMessage);
         QVariantMap errMap;
         errMap["success"] = false;
         errMap["errorMessage"] = humanizeErrorMessage(result.errorMessage);

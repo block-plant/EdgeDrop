@@ -58,3 +58,10 @@ venv/
 # Secure temporary files
 *.tmp
 .edgedrop.tmp.*
+
+# Android build & IDE caches
+android/.gradle/
+android/app/.cxx/
+android/app/build/
+android/build/
+android/local.properties

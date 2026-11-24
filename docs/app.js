@@ -78,8 +78,8 @@
       subtext: 'Apple Silicon · .dmg'
     },
     win: {
-      url: `${RELEASE_BASE}/EdgeDrop-Windows-x64.exe`,
-      name: 'EdgeDrop-Windows-x64.exe',
+      url: `${RELEASE_BASE}/EdgeDrop-Windows-x64-Setup.exe`,
+      name: 'EdgeDrop-Windows-x64-Setup.exe',
       label: 'Download for Windows',
       subtext: 'Windows 10/11 x64 · .exe'
     },
@@ -96,14 +96,14 @@
       subtext: 'x86_64 · .AppImage'
     },
     android: {
-      url: `${RELEASE_BASE}/EdgeDrop-Android.apk`,
-      name: 'EdgeDrop-Android.apk',
+      url: `${RELEASE_BASE}/app-debug.apk`,
+      name: 'app-debug.apk',
       label: 'Download for Android',
       subtext: 'ARM64 & x86_64 · .apk'
     },
     checksums: {
-      url: `${RELEASE_BASE}/SHA256SUMS.txt`,
-      name: 'SHA256SUMS.txt'
+      url: `${RELEASE_BASE}/SHA256SUMS`,
+      name: 'SHA256SUMS'
     }
   };
 
@@ -259,7 +259,7 @@
         if (primarySubtext) primarySubtext.textContent = sub;
       }
       if (checksumCommandCode) {
-        checksumCommandCode.textContent = `sha256sum ${androidAsset.name || 'EdgeDrop-Android.apk'}`;
+        checksumCommandCode.textContent = `sha256sum ${androidAsset.name || 'app-debug.apk'}`;
       }
     } else if (os === 'win') {
       if (mobileNoticeBox) mobileNoticeBox.style.display = 'none';
@@ -270,7 +270,7 @@
         if (primarySubtext) primarySubtext.textContent = sub;
       }
       if (checksumCommandCode) {
-        checksumCommandCode.textContent = `certutil -hashfile ${winAsset.name || 'EdgeDrop-Windows-x64.exe'} SHA256`;
+        checksumCommandCode.textContent = `certutil -hashfile ${winAsset.name || 'EdgeDrop-Windows-x64-Setup.exe'} SHA256`;
       }
     } else if (os === 'linux') {
       if (mobileNoticeBox) mobileNoticeBox.style.display = 'none';
@@ -281,7 +281,7 @@
         if (primarySubtext) primarySubtext.textContent = sub;
       }
       if (checksumCommandCode) {
-        checksumCommandCode.textContent = 'sha256sum -c SHA256SUMS.txt';
+        checksumCommandCode.textContent = 'sha256sum -c SHA256SUMS';
       }
     } else {
       // Default to macOS
@@ -293,7 +293,7 @@
         if (primarySubtext) primarySubtext.textContent = sub;
       }
       if (checksumCommandCode) {
-        checksumCommandCode.textContent = 'shasum -a 256 -c SHA256SUMS.txt';
+        checksumCommandCode.textContent = 'shasum -a 256 -c SHA256SUMS';
       }
     }
 
@@ -355,28 +355,115 @@
   const notchWrapper = document.getElementById('sim-notch-wrapper');
   const dragHandle = document.getElementById('notch-drag-handle');
 
-  // Adaptive Wallpaper Tone Definitions (Live retinting of Adaptive vibe)
+  // 1:1 Desktop App Theme Tokens (Source of truth: desktop/qml/Theme.qml & Main.qml)
   const WALLPAPER_TONES = {
     alpine: {
-      bg: 'hsl(212, 45%, 98%)',
-      ink: '#141518',
-      elevated: 'hsl(212, 35%, 93%)',
-      border: 'hsla(212, 40%, 20%, 0.12)',
-      accent: '#2563EB'
+      isLight: true,
+      bg: '#FAF9F6',
+      ink: '#111318',
+      secondary: '#4A5160',
+      muted: '#6B7280',
+      elevated: '#EEEDE8',
+      border: 'rgba(0, 0, 0, 0.10)',
+      accent: '#2563EB',
+      accentHover: '#1D4ED8',
+      textOnAccent: '#FFFFFF',
+      pillBg: '#FFFFFF',
+      backdrop: 'none',
+      shadow: '0 12px 28px -4px rgba(0, 0, 0, 0.15)'
     },
     pines: {
-      bg: 'hsl(210, 24%, 12%)',
-      ink: '#F4F4F5',
-      elevated: 'hsl(210, 20%, 18%)',
-      border: 'hsla(210, 30%, 80%, 0.12)',
-      accent: '#2DD4BF'
+      isLight: false,
+      bg: '#161618',
+      ink: '#F5F7FA',
+      secondary: '#A6AEBC',
+      muted: '#7A8291',
+      elevated: '#22242A',
+      border: 'rgba(255, 255, 255, 0.12)',
+      accent: '#2DD4BF',
+      accentHover: '#14B8A6',
+      textOnAccent: '#042F2E',
+      pillBg: '#1C1C20',
+      backdrop: 'none',
+      shadow: '0 12px 28px -4px rgba(0, 0, 0, 0.4)'
     },
     sand: {
-      bg: 'hsl(40, 30%, 97%)',
+      isLight: true,
+      bg: '#FAF8F5',
       ink: '#18181B',
-      elevated: 'hsl(40, 25%, 92%)',
-      border: 'hsla(40, 30%, 20%, 0.12)',
-      accent: '#B45309'
+      secondary: '#52525B',
+      muted: '#71717A',
+      elevated: '#EFECE6',
+      border: 'rgba(24, 24, 27, 0.10)',
+      accent: '#B45309',
+      accentHover: '#92400E',
+      textOnAccent: '#FFFFFF',
+      pillBg: '#FFFFFF',
+      backdrop: 'none',
+      shadow: '0 12px 28px -4px rgba(0, 0, 0, 0.15)'
+    },
+    graphite: {
+      isLight: false,
+      bg: '#161618',
+      ink: '#F5F7FA',
+      secondary: '#A6AEBC',
+      muted: '#7A8291',
+      elevated: '#22242A',
+      border: 'rgba(255, 255, 255, 0.12)',
+      accent: '#38BDF8',
+      accentHover: '#0EA5E9',
+      textOnAccent: '#082F49',
+      pillBg: '#1C1C20',
+      backdrop: 'none',
+      shadow: '0 12px 28px -4px rgba(0, 0, 0, 0.4)'
+    }
+  };
+
+  const FIXED_VIBES = {
+    obsidian: {
+      isLight: false,
+      bg: '#161618',
+      ink: '#F5F7FA',
+      secondary: '#A6AEBC',
+      muted: '#7A8291',
+      elevated: '#22242A',
+      border: 'rgba(255, 255, 255, 0.12)',
+      accent: '#3B82F6',
+      accentHover: '#2563EB',
+      textOnAccent: '#FFFFFF',
+      pillBg: '#1C1C20',
+      backdrop: 'none',
+      shadow: '0 12px 28px -4px rgba(0, 0, 0, 0.45)'
+    },
+    porcelain: {
+      isLight: true,
+      bg: '#FAF9F6',
+      ink: '#111318',
+      secondary: '#4A5160',
+      muted: '#6B7280',
+      elevated: '#EEEDE8',
+      border: 'rgba(0, 0, 0, 0.10)',
+      accent: '#18181B',
+      accentHover: '#27272A',
+      textOnAccent: '#FFFFFF',
+      pillBg: '#FFFFFF',
+      backdrop: 'none',
+      shadow: '0 12px 28px -4px rgba(0, 0, 0, 0.15)'
+    },
+    mist: {
+      isLight: false,
+      bg: 'rgba(22, 24, 30, 0.88)',
+      ink: '#F5F7FA',
+      secondary: '#A6AEBC',
+      muted: '#7A8291',
+      elevated: 'rgba(255, 255, 255, 0.15)',
+      border: 'rgba(255, 255, 255, 0.15)',
+      accent: '#60A5FA',
+      accentHover: '#3B82F6',
+      textOnAccent: '#0F172A',
+      pillBg: 'rgba(30, 32, 40, 0.91)',
+      backdrop: 'blur(16px)',
+      shadow: '0 12px 28px -4px rgba(0, 0, 0, 0.35)'
     }
   };
 
@@ -384,17 +471,43 @@
   let currentVibe = 'adaptive';
   let currentEdge = 'right';
 
-  function applyAdaptiveTone() {
-    if (currentVibe !== 'adaptive' || !notchWrapper) return;
-    const tone = WALLPAPER_TONES[currentWallpaper] || WALLPAPER_TONES.alpine;
-    notchWrapper.style.setProperty('--sim-vibe-bg', tone.bg);
-    notchWrapper.style.setProperty('--sim-vibe-ink', tone.ink);
-    notchWrapper.style.setProperty('--sim-vibe-elevated', tone.elevated);
-    notchWrapper.style.setProperty('--sim-vibe-border', tone.border);
-    notchWrapper.style.setProperty('--sim-vibe-accent', tone.accent);
+  function applyVibeTheme() {
+    if (!notchWrapper) return;
+    const theme = currentVibe === 'adaptive'
+      ? (WALLPAPER_TONES[currentWallpaper] || WALLPAPER_TONES.alpine)
+      : FIXED_VIBES[currentVibe];
+
+    if (!theme) return;
+
+    notchWrapper.setAttribute('data-vibe', currentVibe);
+    notchWrapper.setAttribute('data-surface-light', theme.isLight ? 'true' : 'false');
+
+    notchWrapper.style.setProperty('--sim-vibe-bg', theme.bg);
+    notchWrapper.style.setProperty('--sim-vibe-ink', theme.ink);
+    notchWrapper.style.setProperty('--sim-vibe-secondary', theme.secondary);
+    notchWrapper.style.setProperty('--sim-vibe-muted', theme.muted);
+    notchWrapper.style.setProperty('--sim-vibe-elevated', theme.elevated);
+    notchWrapper.style.setProperty('--sim-vibe-border', theme.border);
+    notchWrapper.style.setProperty('--sim-vibe-accent', theme.accent);
+    notchWrapper.style.setProperty('--sim-vibe-accent-hover', theme.accentHover);
+    notchWrapper.style.setProperty('--sim-vibe-text-on-accent', theme.textOnAccent);
+    notchWrapper.style.setProperty('--sim-vibe-pill-bg', theme.pillBg);
+    notchWrapper.style.setProperty('--sim-vibe-backdrop', theme.backdrop);
+    notchWrapper.style.setProperty('--sim-vibe-shadow', theme.shadow);
+
+    const adaptiveDot = document.querySelector('.vibe-dot.vibe-adaptive');
+    if (adaptiveDot) {
+      const adaptiveTone = WALLPAPER_TONES[currentWallpaper] || WALLPAPER_TONES.alpine;
+      const gradient = `linear-gradient(135deg, ${adaptiveTone.accent}, #3B82F6)`;
+      const disc = adaptiveDot.querySelector('.vibe-disc');
+      if (disc) {
+        disc.style.background = gradient;
+      }
+      adaptiveDot.style.setProperty('--adaptive-dot-bg', gradient);
+    }
   }
 
-  applyAdaptiveTone();
+  applyVibeTheme();
 
   // Wallpaper Switcher
   const wpSwatches = document.querySelectorAll('.wp-swatch');
@@ -406,7 +519,7 @@
       if (viewport) {
         viewport.setAttribute('data-wallpaper', currentWallpaper);
       }
-      applyAdaptiveTone();
+      applyVibeTheme();
     });
   });
 
@@ -421,12 +534,7 @@
       dot.classList.add('active');
       dot.setAttribute('aria-checked', 'true');
       currentVibe = dot.dataset.vibe;
-      if (notchWrapper) {
-        notchWrapper.setAttribute('data-vibe', currentVibe);
-      }
-      if (currentVibe === 'adaptive') {
-        applyAdaptiveTone();
-      }
+      applyVibeTheme();
     });
   });
 
@@ -866,8 +974,12 @@
   }
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && installModal && !installModal.hasAttribute('hidden')) {
-      closeModal();
+    if (e.key === 'Escape') {
+      if (downloadNotification && downloadNotification.classList.contains('toast-visible')) {
+        hideDownloadNotification();
+      } else if (installModal && !installModal.hasAttribute('hidden')) {
+        closeModal();
+      }
     }
   });
 
@@ -877,7 +989,7 @@
     });
   });
 
-  // Inline copy buttons inside modal
+  // Inline copy buttons (works for both modal and on-page code snippets)
   const copyInlineBtns = document.querySelectorAll('.copy-inline-btn');
   copyInlineBtns.forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -896,7 +1008,87 @@
     });
   });
 
-  // When download buttons are clicked: open modal with that OS selected after 600ms so download initiates first
+  // ── 10. Design-Matched Post-Download Notification ──────────────────────────
+
+  const downloadNotification = document.getElementById('download-notification');
+  const toastTitle = document.getElementById('toast-title');
+  const toastMessage = document.getElementById('toast-message');
+  const toastActionBtn = document.getElementById('toast-action-btn');
+  const toastCloseBtn = document.getElementById('toast-close-btn');
+
+  let toastDismissTimer = null;
+  let activeToastOS = 'mac';
+
+  const OS_NAMES = {
+    mac: 'macOS',
+    win: 'Windows',
+    linux: 'Linux',
+    android: 'Android'
+  };
+
+  function showDownloadNotification(osKey) {
+    if (!downloadNotification) return;
+    const cleanOS = osKey === 'ios' ? 'mac' : (osKey || 'mac');
+    activeToastOS = cleanOS;
+    const osDisplayName = OS_NAMES[cleanOS] || 'your OS';
+
+    if (toastTitle) {
+      toastTitle.textContent = `Downloading EdgeDrop for ${osDisplayName}`;
+    }
+    if (toastMessage) {
+      toastMessage.textContent = `Because EdgeDrop isn't code-signed yet, ${osDisplayName} will show a one-time security prompt. We've put the exact 30-second bypass steps right here.`;
+    }
+
+    downloadNotification.removeAttribute('hidden');
+    // Force layout reflow so entrance animation triggers cleanly
+    void downloadNotification.offsetWidth;
+    downloadNotification.classList.add('toast-visible');
+
+    startToastTimer();
+  }
+
+  function hideDownloadNotification() {
+    if (!downloadNotification) return;
+    downloadNotification.classList.remove('toast-visible');
+    clearTimeout(toastDismissTimer);
+    toastDismissTimer = null;
+    setTimeout(() => {
+      if (!downloadNotification.classList.contains('toast-visible')) {
+        downloadNotification.setAttribute('hidden', '');
+      }
+    }, 250);
+  }
+
+  function startToastTimer() {
+    clearTimeout(toastDismissTimer);
+    toastDismissTimer = setTimeout(() => {
+      hideDownloadNotification();
+    }, 15000); // Generous 15s timeout
+  }
+
+  function pauseToastTimer() {
+    clearTimeout(toastDismissTimer);
+  }
+
+  if (downloadNotification) {
+    downloadNotification.addEventListener('mouseenter', pauseToastTimer);
+    downloadNotification.addEventListener('mouseleave', startToastTimer);
+    downloadNotification.addEventListener('focusin', pauseToastTimer);
+    downloadNotification.addEventListener('focusout', startToastTimer);
+  }
+
+  if (toastCloseBtn) {
+    toastCloseBtn.addEventListener('click', hideDownloadNotification);
+  }
+
+  if (toastActionBtn) {
+    toastActionBtn.addEventListener('click', () => {
+      hideDownloadNotification();
+      openModal(activeToastOS);
+    });
+  }
+
+  // When download buttons or links are clicked: trigger download & show notification
   const downloadTriggers = [
     { id: 'primary-cta-btn', os: () => detectClientOS() },
     { id: 'link-mac', os: 'mac' },
@@ -916,9 +1108,7 @@
     if (el) {
       el.addEventListener('click', () => {
         const targetOS = typeof os === 'function' ? os() : os;
-        setTimeout(() => {
-          openModal(targetOS);
-        }, 600);
+        showDownloadNotification(targetOS);
       });
     }
   });

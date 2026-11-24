@@ -85,19 +85,42 @@ static size_t hashBuffer(const uint8_t* data, size_t len) {
     return h;
 }
 
-// ── Tier 1: Fixed Deep libqpdf Structural Compression ─────────────────────────
+struct PdfLadderStep {
+    int q;
+    int maxDim;
+};
 
-static bool tier1Compress(const std::filesystem::path& inPath,
-                          const std::filesystem::path& outPath,
-                          int64_t targetBytes,
-                          ProgressCallback progress,
-                          CancelToken cancel,
-                          int overrideJpegQ = 0) {
+static const std::vector<PdfLadderStep> kPdfLadder = {
+    {85, 2048}, // 0: Ultra high quality (gentle reduction)
+    {78, 1600}, // 1: High quality
+    {70, 1440}, // 2: Balanced high
+    {62, 1280}, // 3: Standard
+    {52, 1080}, // 4: Medium
+    {42,  960}, // 5: Compact
+    {32,  800}, // 6: Low / aggressive
+    {24,  640}  // 7: Maximum floor
+};
+
+// ── In-Memory Decoded Image Cache (Extract & Decode Once) ─────────────────────
+
+struct CachedImage {
+    int objId = 0;
+    int origWidth = 0;
+    int origHeight = 0;
+    size_t rawSize = 0;
+    cv::Mat decodedMat; // uncompressed BGR pixels
+};
+
+static std::unordered_map<int, CachedImage> extractAndDecodeImages(
+    const std::filesystem::path& inPath,
+    CancelToken cancel,
+    ProgressCallback progress) {
+
+    std::unordered_map<int, CachedImage> cached;
     try {
         QPDF pdf;
         pdf.processFile(inPath.string().c_str());
 
-        // Find mask object IDs so we do NOT compress masks
         std::unordered_set<int> maskObjIds;
         for (auto& obj : pdf.getAllObjects()) {
             if (!obj.isStream()) continue;
@@ -124,22 +147,13 @@ static bool tier1Compress(const std::filesystem::path& inPath,
             }
         }
 
-        // Collect all compressible image XObjects across pages and nested /Form XObjects
-        struct ImageObjInfo {
-            QPDFObjectHandle handle;
-            int width = 0;
-            int height = 0;
-            size_t rawSize = 0;
-            bool isDct = false;
-        };
+        size_t totalDecodedBytes = 0;
+        constexpr size_t kMaxCacheMemoryBytes = 128 * 1024 * 1024; // 128 MB RAM ceiling
+        constexpr size_t kMaxEmbeddedImages = 1024;
 
-        std::vector<ImageObjInfo> images;
-        std::unordered_map<size_t, QPDFObjectHandle> deduplicatedStreams;
-
-        constexpr size_t kMaxEmbeddedImages = 2048;
         for (auto& obj : pdf.getAllObjects()) {
-            if (images.size() >= kMaxEmbeddedImages) break;
-            if (cancel && cancel->load()) return false;
+            if (cached.size() >= kMaxEmbeddedImages) break;
+            if (cancel && cancel->load()) return {};
             if (!obj.isStream()) continue;
             auto dict = obj.getDict();
             if (!dict.isDictionary()) continue;
@@ -148,7 +162,7 @@ static bool tier1Compress(const std::filesystem::path& inPath,
             if (!subtype.isName() || subtype.getName() != "/Image") continue;
 
             int objId = obj.getObjGen().getObj();
-            if (maskObjIds.count(objId)) continue; // Skip masks themselves
+            if (maskObjIds.count(objId)) continue; // Skip masks
 
             int w = 0, h = 0;
             if (dict.hasKey("/Width") && dict.getKey("/Width").isInteger()) {
@@ -157,7 +171,12 @@ static bool tier1Compress(const std::filesystem::path& inPath,
             if (dict.hasKey("/Height") && dict.getKey("/Height").isInteger()) {
                 h = static_cast<int>(dict.getKey("/Height").getIntValue());
             }
-            if (w <= 16 || h <= 16) continue; // Skip tiny icons/dots
+            if (w <= 32 || h <= 32) continue; // Skip tiny icons/dots
+
+            size_t rawLen = 0;
+            std::shared_ptr<Buffer> rawBuf = obj.getRawStreamData();
+            if (rawBuf) rawLen = rawBuf->getSize();
+            if (rawLen < 16384) continue; // Skip tiny streams < 16 KB (saves negligible bytes)
 
             bool isDct = false;
             if (dict.hasKey("/Filter")) {
@@ -174,133 +193,154 @@ static bool tier1Compress(const std::filesystem::path& inPath,
                 }
             }
 
-            size_t rawLen = 0;
-            std::shared_ptr<Buffer> rawBuf = obj.getRawStreamData();
-            if (rawBuf) rawLen = rawBuf->getSize();
-
-            images.push_back({obj, w, h, rawLen, isDct});
-        }
-
-        if (progress) progress(0.3);
-
-        int targetJpegQ = 65;
-        if (overrideJpegQ > 0) {
-            targetJpegQ = overrideJpegQ;
-        } else if (targetBytes > 0) {
-            int64_t inSize = static_cast<int64_t>(std::filesystem::file_size(inPath));
-            if (inSize > 0) {
-                double ratio = static_cast<double>(targetBytes) / static_cast<double>(inSize);
-                if (ratio < 0.25) targetJpegQ = 35;
-                else if (ratio < 0.50) targetJpegQ = 50;
-                else if (ratio < 0.75) targetJpegQ = 65;
-                else targetJpegQ = 78;
-            }
-        }
-
-        for (auto& info : images) {
-            if (cancel && cancel->load()) return false;
             cv::Mat decoded;
-
-            if (info.isDct) {
-                std::shared_ptr<Buffer> buf = info.handle.getRawStreamData();
-                if (buf && buf->getSize() > 256) {
-                    std::vector<uint8_t> rawVec(buf->getBuffer(), buf->getBuffer() + buf->getSize());
+            if (isDct) {
+                if (rawBuf && rawBuf->getSize() > 256) {
+                    std::vector<uint8_t> rawVec(rawBuf->getBuffer(), rawBuf->getBuffer() + rawBuf->getSize());
                     decoded = cv::imdecode(rawVec, cv::IMREAD_COLOR);
                 }
             } else {
-                std::shared_ptr<Buffer> buf = info.handle.getStreamData(qpdf_dl_all);
+                std::shared_ptr<Buffer> buf = obj.getStreamData(qpdf_dl_all);
                 if (buf && buf->getSize() > 256) {
-                    auto dict = info.handle.getDict();
                     int bpc = 8;
                     if (dict.hasKey("/BitsPerComponent") && dict.getKey("/BitsPerComponent").isInteger()) {
                         bpc = static_cast<int>(dict.getKey("/BitsPerComponent").getIntValue());
                     }
 
-                    if (bpc == 8 && info.width > 0 && info.height > 0) {
-                        size_t expectedRgb = static_cast<size_t>(info.width * info.height * 3);
-                        size_t expectedCmyk = static_cast<size_t>(info.width * info.height * 4);
-                        size_t expectedGray = static_cast<size_t>(info.width * info.height);
+                    if (bpc == 8 && w > 0 && h > 0) {
+                        size_t expectedRgb = static_cast<size_t>(w * h * 3);
+                        size_t expectedCmyk = static_cast<size_t>(w * h * 4);
+                        size_t expectedGray = static_cast<size_t>(w * h);
 
                         if (buf->getSize() >= expectedRgb) {
-                            cv::Mat rgb(info.height, info.width, CV_8UC3, buf->getBuffer());
+                            cv::Mat rgb(h, w, CV_8UC3, buf->getBuffer());
                             cv::cvtColor(rgb, decoded, cv::COLOR_RGB2BGR);
                         } else if (buf->getSize() >= expectedCmyk) {
-                            cv::Mat cmyk(info.height, info.width, CV_8UC4, buf->getBuffer());
-                            // Convert CMYK to BGR
-                            decoded.create(info.height, info.width, CV_8UC3);
-                            for (int y = 0; y < info.height; ++y) {
+                            cv::Mat cmyk(h, w, CV_8UC4, buf->getBuffer());
+                            decoded.create(h, w, CV_8UC3);
+                            for (int y = 0; y < h; ++y) {
                                 const uint8_t* pC = cmyk.ptr<uint8_t>(y);
                                 uint8_t* pB = decoded.ptr<uint8_t>(y);
-                                for (int x = 0; x < info.width; ++x) {
+                                for (int x = 0; x < w; ++x) {
                                     float c = pC[x * 4 + 0] / 255.f;
                                     float m = pC[x * 4 + 1] / 255.f;
                                     float ycol = pC[x * 4 + 2] / 255.f;
                                     float k = pC[x * 4 + 3] / 255.f;
-                                    pB[x * 3 + 2] = static_cast<uint8_t>(255.f * (1.f - c) * (1.f - k)); // R
-                                    pB[x * 3 + 1] = static_cast<uint8_t>(255.f * (1.f - m) * (1.f - k)); // G
-                                    pB[x * 3 + 0] = static_cast<uint8_t>(255.f * (1.f - ycol) * (1.f - k)); // B
+                                    pB[x * 3 + 2] = static_cast<uint8_t>(255.f * (1.f - c) * (1.f - k));
+                                    pB[x * 3 + 1] = static_cast<uint8_t>(255.f * (1.f - m) * (1.f - k));
+                                    pB[x * 3 + 0] = static_cast<uint8_t>(255.f * (1.f - ycol) * (1.f - k));
                                 }
                             }
                         } else if (buf->getSize() >= expectedGray) {
-                            cv::Mat gray(info.height, info.width, CV_8UC1, buf->getBuffer());
+                            cv::Mat gray(h, w, CV_8UC1, buf->getBuffer());
                             cv::cvtColor(gray, decoded, cv::COLOR_GRAY2BGR);
                         }
                     }
                 }
             }
 
-            if (decoded.empty()) continue;
+            if (!decoded.empty()) {
+                size_t matBytes = decoded.total() * decoded.elemSize();
+                if (totalDecodedBytes + matBytes <= kMaxCacheMemoryBytes) {
+                    totalDecodedBytes += matBytes;
+                    cached[objId] = CachedImage{objId, w, h, rawLen, decoded};
+                }
+            }
+        }
+    } catch (...) {}
 
-            // Power-law downscale if image is high resolution (limit to max 1280px or 800px depending on budget)
-            int maxLongEdge = (targetJpegQ <= 40) ? 960 : 1600;
+    if (progress) progress(0.15);
+    return cached;
+}
+
+// ── Tier 1: Fixed Deep libqpdf Structural Compression ─────────────────────────
+
+static bool tier1Compress(const std::filesystem::path& inPath,
+                          const std::filesystem::path& outPath,
+                          const std::unordered_map<int, CachedImage>& cachedImages,
+                          ProgressCallback progress,
+                          double pStart,
+                          double pEnd,
+                          CancelToken cancel,
+                          int targetJpegQ,
+                          int maxLongEdge) {
+    try {
+        QPDF pdf;
+        pdf.processFile(inPath.string().c_str());
+
+        std::unordered_map<size_t, QPDFObjectHandle> deduplicatedStreams;
+
+        auto allObjects = pdf.getAllObjects();
+        size_t totalObjs = allObjects.size();
+        size_t objIdx = 0;
+
+        for (auto& obj : allObjects) {
+            objIdx++;
+            if (cancel && cancel->load()) return false;
+            if (!obj.isStream()) continue;
+
+            int objId = obj.getObjGen().getObj();
+            auto it = cachedImages.find(objId);
+            if (it == cachedImages.end()) continue;
+            const auto& ci = it->second;
+            if (ci.decodedMat.empty()) continue;
+
+            const cv::Mat& decoded = ci.decodedMat;
+            cv::Mat scaledMat = decoded;
             int longEdge = std::max(decoded.cols, decoded.rows);
+
+            // Never upscale: only downscale if longEdge > maxLongEdge
             if (longEdge > maxLongEdge) {
                 double scale = static_cast<double>(maxLongEdge) / static_cast<double>(longEdge);
-                int nw = std::max(320, static_cast<int>(decoded.cols * scale));
-                int nh = std::max(320, static_cast<int>(decoded.rows * scale));
-                cv::resize(decoded, decoded, cv::Size(nw, nh), 0, 0, cv::INTER_AREA);
+                int nw = std::min(decoded.cols, std::max(64, static_cast<int>(decoded.cols * scale)));
+                int nh = std::min(decoded.rows, std::max(64, static_cast<int>(decoded.rows * scale)));
+                cv::resize(decoded, scaledMat, cv::Size(nw, nh), 0, 0, cv::INTER_AREA);
             }
 
             std::vector<uint8_t> compressedJpg;
             std::vector<int> params = {cv::IMWRITE_JPEG_QUALITY, targetJpegQ, cv::IMWRITE_JPEG_OPTIMIZE, 1};
-            cv::imencode(".jpg", decoded, compressedJpg, params);
-
+            cv::imencode(".jpg", scaledMat, compressedJpg, params);
             if (compressedJpg.empty()) continue;
 
             // Deduplication check
             size_t streamHash = hashBuffer(compressedJpg.data(), compressedJpg.size());
             if (deduplicatedStreams.count(streamHash)) {
                 auto existing = deduplicatedStreams[streamHash];
-                info.handle.replaceStreamData(
+                obj.replaceStreamData(
                     existing.getRawStreamData(),
                     existing.getDict().getKey("/Filter"),
                     QPDFObjectHandle::newNull()
                 );
-                auto dict = info.handle.getDict();
+                auto dict = obj.getDict();
                 dict.replaceKey("/ColorSpace", QPDFObjectHandle::newName("/DeviceRGB"));
                 dict.replaceKey("/BitsPerComponent", QPDFObjectHandle::newInteger(8));
-                dict.replaceKey("/Width",  QPDFObjectHandle::newInteger(decoded.cols));
-                dict.replaceKey("/Height", QPDFObjectHandle::newInteger(decoded.rows));
+                dict.replaceKey("/Width",  QPDFObjectHandle::newInteger(scaledMat.cols));
+                dict.replaceKey("/Height", QPDFObjectHandle::newInteger(scaledMat.rows));
                 continue;
             }
 
-            // Only replace stream if saving at least 5% (idempotency guard against endless degradation)
-            if (info.rawSize == 0 || compressedJpg.size() < static_cast<size_t>(info.rawSize * 0.95)) {
-                info.handle.replaceStreamData(
+            // Only replace stream if saving at least 5% (idempotency guard)
+            if (ci.rawSize == 0 || compressedJpg.size() < static_cast<size_t>(ci.rawSize * 0.95)) {
+                obj.replaceStreamData(
                     std::string(reinterpret_cast<const char*>(compressedJpg.data()), compressedJpg.size()),
                     QPDFObjectHandle::newName("/DCTDecode"),
                     QPDFObjectHandle::newNull()
                 );
-                auto dict = info.handle.getDict();
+                auto dict = obj.getDict();
                 dict.replaceKey("/ColorSpace", QPDFObjectHandle::newName("/DeviceRGB"));
                 dict.replaceKey("/BitsPerComponent", QPDFObjectHandle::newInteger(8));
-                dict.replaceKey("/Width",  QPDFObjectHandle::newInteger(decoded.cols));
-                dict.replaceKey("/Height", QPDFObjectHandle::newInteger(decoded.rows));
-                deduplicatedStreams[streamHash] = info.handle;
+                dict.replaceKey("/Width",  QPDFObjectHandle::newInteger(scaledMat.cols));
+                dict.replaceKey("/Height", QPDFObjectHandle::newInteger(scaledMat.rows));
+                deduplicatedStreams[streamHash] = obj;
+            }
+
+            if (progress && totalObjs > 0 && (objIdx % 25 == 0)) {
+                double subP = pStart + (pEnd - pStart) * 0.6 * (static_cast<double>(objIdx) / totalObjs);
+                progress(subP);
             }
         }
 
-        if (progress) progress(0.6);
+        if (cancel && cancel->load()) return false;
 
         // Write using QPDFWriter with deep flate recompression
         QPDFWriter writer(pdf, outPath.string().c_str());
@@ -310,6 +350,8 @@ static bool tier1Compress(const std::filesystem::path& inPath,
         writer.setRecompressFlate(true);
         writer.setPreserveUnreferencedObjects(false);
         writer.write();
+
+        if (progress) progress(pEnd);
         return true;
     } catch (...) {
         return false;
@@ -433,14 +475,7 @@ JobResult PdfCompressor::compress(const JobRequest& req,
         : req.outputDirectory;
     std::filesystem::create_directories(outDir);
 
-    std::string stem = req.inputFilePath.stem().string();
-    std::filesystem::path outPath;
-    int ctr = 0;
-    do {
-        std::string sfx = (ctr == 0) ? "" : " (" + std::to_string(ctr) + ")";
-        outPath = outDir / (stem + "_compressed" + sfx + ".pdf");
-        ++ctr;
-    } while (std::filesystem::exists(outPath));
+    std::filesystem::path outPath = SecurityGuards::generateCompressedOutputPath(req.inputFilePath, outDir, ".pdf");
 
     // ── Pass-Through Guard ────────────────────────────────────────────────────
     if (req.targetBytes > 0 && result.inputSizeBytes <= req.targetBytes) {
@@ -483,43 +518,161 @@ JobResult PdfCompressor::compress(const JobRequest& req,
         return result;
     }
 
-    if (progress) progress(0.1);
+    if (progress) progress(0.12);
     if (cancel && cancel->load()) {
         result.success = false;
         result.errorMessage = "Cancelled.";
         return result;
     }
 
-    // ── Execute Tier 1: Fixed Deep libqpdf Compression ────────────────────────
-    std::string tmpName1 = ".edgedrop.tmp.t1." + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ".pdf";
-    std::filesystem::path tier1TmpPath = outDir / tmpName1;
+    // ── Pre-extract & decode embedded images once ─────────────────────────────
+    auto cachedImages = extractAndDecodeImages(req.inputFilePath, cancel, progress);
 
-    bool t1Success = tier1Compress(req.inputFilePath, tier1TmpPath, req.targetBytes, progress, cancel);
-    int64_t t1Size = t1Success ? static_cast<int64_t>(std::filesystem::file_size(tier1TmpPath)) : 0;
+    if (cancel && cancel->load()) {
+        result.success = false;
+        result.errorMessage = "Cancelled.";
+        return result;
+    }
 
-    std::filesystem::path bestCandidate = tier1TmpPath;
-    int64_t bestSize = t1Size;
+    // ── Execute Tier 1: libqpdf Quality Ladder Search ─────────────────────────
+    std::filesystem::path bestValidCandidate;
+    int64_t bestValidSize = 0;
+    std::filesystem::path smallestCandidate;
+    int64_t smallestSize = 0;
 
-    if (progress) progress(0.7);
+    int64_t effectiveTarget = (req.targetBytes > 0) ? static_cast<int64_t>(req.targetBytes * 0.99) : 0;
+
+    if (effectiveTarget > 0) {
+        double ratio = static_cast<double>(req.targetBytes) / static_cast<double>(result.inputSizeBytes);
+        int startIdx = 3; // standard (62, 1280)
+        if (ratio >= 0.75) {
+            startIdx = 1; // high (78, 1600)
+        } else if (ratio >= 0.50) {
+            startIdx = 3; // standard (62, 1280)
+        } else if (ratio >= 0.30) {
+            startIdx = 4; // medium (52, 1080)
+        } else {
+            startIdx = 6; // compact/floor (32, 800)
+        }
+
+        int low = 0;
+        int high = static_cast<int>(kPdfLadder.size()) - 1;
+        constexpr int kMaxTier1Probes = 4;
+        int probesDone = 0;
+        int64_t prevSize = 0;
+        bool isFirstProbe = true;
+
+        while (low <= high && probesDone < kMaxTier1Probes) {
+            if (cancel && cancel->load()) break;
+
+            int mid = isFirstProbe ? startIdx : (low + (high - low) / 2);
+            isFirstProbe = false;
+
+            double pStart = 0.15 + (0.50 * probesDone / kMaxTier1Probes);
+            double pEnd   = 0.15 + (0.50 * (probesDone + 1) / kMaxTier1Probes);
+
+            std::string tmpName = ".edgedrop.tmp.t1." + std::to_string(mid) + "." +
+                                  std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ".pdf";
+            std::filesystem::path probePath = outDir / tmpName;
+
+            bool ok = tier1Compress(req.inputFilePath, probePath, cachedImages, progress, pStart, pEnd, cancel,
+                                    kPdfLadder[mid].q, kPdfLadder[mid].maxDim);
+            probesDone++;
+
+            if (!ok || !std::filesystem::exists(probePath)) {
+                std::error_code ec;
+                std::filesystem::remove(probePath, ec);
+                low = mid + 1;
+                continue;
+            }
+
+            int64_t sz = static_cast<int64_t>(std::filesystem::file_size(probePath));
+
+            // Stagnation check: abort if consecutive passes produce nearly identical size (< 2% delta)
+            if (prevSize > 0 && std::abs(prevSize - sz) < static_cast<int64_t>(prevSize * 0.02)) {
+                if (sz <= effectiveTarget) {
+                    if (bestValidCandidate.empty() || sz > bestValidSize) {
+                        if (!bestValidCandidate.empty() && bestValidCandidate != smallestCandidate) {
+                            std::error_code ec; std::filesystem::remove(bestValidCandidate, ec);
+                        }
+                        bestValidCandidate = probePath;
+                        bestValidSize = sz;
+                    }
+                }
+                break;
+            }
+            prevSize = sz;
+
+            if (smallestSize == 0 || sz < smallestSize) {
+                if (!smallestCandidate.empty() && smallestCandidate != bestValidCandidate && std::filesystem::exists(smallestCandidate)) {
+                    std::error_code ec; std::filesystem::remove(smallestCandidate, ec);
+                }
+                smallestCandidate = probePath;
+                smallestSize = sz;
+            }
+
+            if (sz <= effectiveTarget) {
+                // Meets target! Record as valid candidate (prefer largest <= effectiveTarget)
+                if (bestValidCandidate.empty() || sz > bestValidSize) {
+                    if (!bestValidCandidate.empty() && bestValidCandidate != smallestCandidate && std::filesystem::exists(bestValidCandidate)) {
+                        std::error_code ec; std::filesystem::remove(bestValidCandidate, ec);
+                    }
+                    bestValidCandidate = probePath;
+                    bestValidSize = sz;
+                } else if (probePath != smallestCandidate) {
+                    std::error_code ec; std::filesystem::remove(probePath, ec);
+                }
+
+                // Practical Early Exit: inside 80%–99% window of targetBytes!
+                if (sz >= static_cast<int64_t>(req.targetBytes * 0.80)) {
+                    break;
+                }
+                // Try higher quality (lower index)
+                high = mid - 1;
+            } else {
+                // Too large, try higher compression (higher index)
+                if (probePath != smallestCandidate) {
+                    std::error_code ec; std::filesystem::remove(probePath, ec);
+                }
+                low = mid + 1;
+            }
+        }
+    } else {
+        // No target size: single high-quality pass
+        std::string tmpName = ".edgedrop.tmp.t1.default." + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ".pdf";
+        std::filesystem::path probePath = outDir / tmpName;
+        if (tier1Compress(req.inputFilePath, probePath, cachedImages, progress, 0.15, 0.65, cancel, 78, 1600)) {
+            bestValidCandidate = probePath;
+            bestValidSize = static_cast<int64_t>(std::filesystem::file_size(probePath));
+        }
+    }
 
     // ── Execute Tier 2: Ghostscript Fallback if targetBytes not met ───────────
     std::string gsBin = locateGhostscript();
 
-    if (req.targetBytes > 0 && (bestSize == 0 || bestSize > req.targetBytes) && !gsBin.empty()) {
-        struct GsPreset { int dpi; int q; };
-        std::vector<GsPreset> presets = {
-            {150, 75}, // Pass A: Fine / high fidelity
-            {130, 65}, // Pass B: High quality standard
-            {110, 55}, // Pass C: Balanced
-            {96,  45}, // Pass D: Medium
-            {80,  35}, // Pass E: Compact
-            {72,  30}, // Pass F: Floor
-            {72,  22}  // Pass G: Deep floor
-        };
+    if (effectiveTarget > 0 && bestValidCandidate.empty() && !gsBin.empty() && !(cancel && cancel->load())) {
+        if (progress) progress(0.68);
 
-        const auto& gsInput = (t1Success && t1Size > 0) ? tier1TmpPath : req.inputFilePath;
-        for (const auto& pr : presets) {
+        double ratio = static_cast<double>(req.targetBytes) / static_cast<double>(result.inputSizeBytes);
+        struct GsPreset { int dpi; int q; };
+        std::vector<GsPreset> presets;
+        if (ratio >= 0.40) {
+            presets = { {120, 60}, {85, 45}, {72, 30} };
+        } else {
+            presets = { {85, 45}, {72, 30}, {72, 22} };
+        }
+
+        const auto& gsInput = (!smallestCandidate.empty() && std::filesystem::exists(smallestCandidate)) ? smallestCandidate : req.inputFilePath;
+        int64_t prevGsSize = 0;
+        int gsPassCount = static_cast<int>(presets.size());
+
+        for (int i = 0; i < gsPassCount; ++i) {
             if (cancel && cancel->load()) break;
+            const auto& pr = presets[i];
+
+            double pGs = 0.70 + (0.24 * i / gsPassCount);
+            if (progress) progress(pGs);
+
             std::string tmpName2 = ".edgedrop.tmp.t2." + std::to_string(pr.dpi) + "." +
                                    std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ".pdf";
             std::filesystem::path tier2TmpPath = outDir / tmpName2;
@@ -537,35 +690,44 @@ JobResult PdfCompressor::compress(const JobRequest& req,
                 }
 
                 if (t2Pages == originalPageCount) {
-                    // Chain GS output -> Tier 1 libqpdf image & object stream pass
-                    std::string t1PostName = tier2TmpPath.string() + ".t1post.pdf";
-                    std::filesystem::path t1PostPath(t1PostName);
-                    if (tier1Compress(tier2TmpPath, t1PostPath, req.targetBytes, nullptr, cancel)) {
-                        if (std::filesystem::exists(t1PostPath) &&
-                            std::filesystem::file_size(t1PostPath) < std::filesystem::file_size(tier2TmpPath)) {
-                            std::error_code ec;
-                            std::filesystem::rename(t1PostPath, tier2TmpPath, ec);
-                        } else {
-                            std::error_code ec;
-                            std::filesystem::remove(t1PostPath, ec);
-                        }
-                    }
-
                     int64_t t2Size = static_cast<int64_t>(std::filesystem::file_size(tier2TmpPath));
-                    if (bestSize == 0 || t2Size < bestSize) {
-                        if (bestCandidate != tier1TmpPath && std::filesystem::exists(bestCandidate)) {
-                            std::error_code ec;
-                            std::filesystem::remove(bestCandidate, ec);
+
+                    // Stagnation guard in Tier 2
+                    if (prevGsSize > 0 && std::abs(prevGsSize - t2Size) < static_cast<int64_t>(prevGsSize * 0.02)) {
+                        if (tier2TmpPath != smallestCandidate && tier2TmpPath != bestValidCandidate) {
+                            std::error_code ec; std::filesystem::remove(tier2TmpPath, ec);
                         }
-                        bestCandidate = tier2TmpPath;
-                        bestSize = t2Size;
-                    } else {
-                        std::error_code ec;
-                        std::filesystem::remove(tier2TmpPath, ec);
+                        break;
+                    }
+                    prevGsSize = t2Size;
+
+                    if (smallestSize == 0 || t2Size < smallestSize) {
+                        if (!smallestCandidate.empty() && smallestCandidate != bestValidCandidate && std::filesystem::exists(smallestCandidate)) {
+                            std::error_code ec; std::filesystem::remove(smallestCandidate, ec);
+                        }
+                        smallestCandidate = tier2TmpPath;
+                        smallestSize = t2Size;
                     }
 
-                    if (bestSize <= req.targetBytes) {
-                        break; // Met target
+                    if (t2Size <= effectiveTarget) {
+                        if (bestValidCandidate.empty() || t2Size > bestValidSize) {
+                            if (!bestValidCandidate.empty() && bestValidCandidate != smallestCandidate && std::filesystem::exists(bestValidCandidate)) {
+                                std::error_code ec; std::filesystem::remove(bestValidCandidate, ec);
+                            }
+                            bestValidCandidate = tier2TmpPath;
+                            bestValidSize = t2Size;
+                        } else if (tier2TmpPath != smallestCandidate) {
+                            std::error_code ec; std::filesystem::remove(tier2TmpPath, ec);
+                        }
+
+                        // Early exit if in 80%–99% window!
+                        if (t2Size >= static_cast<int64_t>(req.targetBytes * 0.80)) {
+                            break;
+                        }
+                    } else {
+                        if (tier2TmpPath != smallestCandidate) {
+                            std::error_code ec; std::filesystem::remove(tier2TmpPath, ec);
+                        }
                     }
                 } else {
                     std::error_code ec;
@@ -573,49 +735,38 @@ JobResult PdfCompressor::compress(const JobRequest& req,
                 }
             }
         }
-    } else if (req.targetBytes > 0 && (bestSize == 0 || bestSize > req.targetBytes) && gsBin.empty()) {
-        // Fallback Tier 1 second pass at deeper compression (Q=35) when Ghostscript is absent
-        std::string tmpName1b = ".edgedrop.tmp.t1b." + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ".pdf";
-        std::filesystem::path tier1bTmpPath = outDir / tmpName1b;
-        if (tier1Compress(req.inputFilePath, tier1bTmpPath, req.targetBytes, nullptr, cancel, 35)) {
-            int64_t t1bSize = static_cast<int64_t>(std::filesystem::file_size(tier1bTmpPath));
-            if (t1bSize > 0 && (bestSize == 0 || t1bSize < bestSize)) {
-                if (bestCandidate != tier1TmpPath && std::filesystem::exists(bestCandidate)) {
-                    std::error_code ec;
-                    std::filesystem::remove(bestCandidate, ec);
-                }
-                bestCandidate = tier1bTmpPath;
-                bestSize = t1bSize;
-            } else {
-                std::error_code ec;
-                std::filesystem::remove(tier1bTmpPath, ec);
-            }
-        }
     }
+
+    if (progress) progress(0.95);
 
     if (cancel && cancel->load()) {
         std::error_code ec;
-        std::filesystem::remove(tier1TmpPath, ec);
-        if (bestCandidate != tier1TmpPath) std::filesystem::remove(bestCandidate, ec);
+        if (!bestValidCandidate.empty()) std::filesystem::remove(bestValidCandidate, ec);
+        if (!smallestCandidate.empty() && smallestCandidate != bestValidCandidate) std::filesystem::remove(smallestCandidate, ec);
         result.success = false;
         result.errorMessage = "Cancelled.";
         return result;
     }
 
-    if (bestSize == 0 || !std::filesystem::exists(bestCandidate)) {
+    std::filesystem::path chosenCandidate = !bestValidCandidate.empty() ? bestValidCandidate : smallestCandidate;
+    int64_t chosenSize = !bestValidCandidate.empty() ? bestValidSize : smallestSize;
+
+    if (!smallestCandidate.empty() && smallestCandidate != chosenCandidate && std::filesystem::exists(smallestCandidate)) {
         std::error_code ec;
-        std::filesystem::remove(tier1TmpPath, ec);
+        std::filesystem::remove(smallestCandidate, ec);
+    }
+
+    if (chosenSize == 0 || !std::filesystem::exists(chosenCandidate)) {
         result.success = false;
         result.errorMessage = "PDF compression produced invalid output.";
         return result;
     }
 
     // Idempotency Guard: if output saves < 5% of input, verify whether to pass through original
-    if (bestSize >= static_cast<int64_t>(result.inputSizeBytes * 0.95)) {
-        if (bestSize >= result.inputSizeBytes) {
+    if (chosenSize >= static_cast<int64_t>(result.inputSizeBytes * 0.95)) {
+        if (chosenSize >= result.inputSizeBytes) {
             std::error_code ec;
-            std::filesystem::remove(tier1TmpPath, ec);
-            if (bestCandidate != tier1TmpPath) std::filesystem::remove(bestCandidate, ec);
+            std::filesystem::remove(chosenCandidate, ec);
             std::filesystem::copy_file(req.inputFilePath, outPath, std::filesystem::copy_options::overwrite_existing, ec);
             result.success = true;
             result.outputFilePath = outPath;
@@ -623,7 +774,7 @@ JobResult PdfCompressor::compress(const JobRequest& req,
             result.outputFormat = "PDF";
             result.hitFloor = (req.targetBytes > 0 && result.outputSizeBytes > req.targetBytes);
             if (result.hitFloor) {
-                result.floorNote = "Reached maximum compression floor (72 DPI) while maintaining vector text legibility.";
+                result.floorNote = "Reached maximum compression floor while maintaining vector text legibility.";
             }
             auto t1 = std::chrono::steady_clock::now();
             result.durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
@@ -632,19 +783,14 @@ JobResult PdfCompressor::compress(const JobRequest& req,
         }
     }
 
-    // Atomically rename bestCandidate to outPath
+    // Atomically rename chosenCandidate to outPath
     std::error_code ec;
-    std::filesystem::rename(bestCandidate, outPath, ec);
+    std::filesystem::rename(chosenCandidate, outPath, ec);
     if (ec) {
-        std::filesystem::remove(bestCandidate, ec);
-        std::filesystem::remove(tier1TmpPath, ec);
+        std::filesystem::remove(chosenCandidate, ec);
         result.success = false;
         result.errorMessage = "Failed to write output PDF: " + outPath.string();
         return result;
-    }
-
-    if (bestCandidate != tier1TmpPath && std::filesystem::exists(tier1TmpPath)) {
-        std::filesystem::remove(tier1TmpPath, ec);
     }
 
     result.success = true;

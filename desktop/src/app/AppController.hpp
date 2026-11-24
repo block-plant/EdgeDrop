@@ -39,6 +39,11 @@ class AppController : public QObject {
     Q_PROPERTY(bool    resultHitFloor READ resultHitFloor NOTIFY currentResultChanged)
     Q_PROPERTY(QString floorNote      READ floorNote      NOTIFY currentResultChanged)
 
+    // ── FFmpeg availability ───────────────────────────────────────────────────
+    Q_PROPERTY(bool    hasFfmpeg            READ hasFfmpeg            NOTIFY ffmpegAvailabilityChanged)
+    Q_PROPERTY(bool    isCurrentFileMedia   READ isCurrentFileMedia   NOTIFY currentFileInfoChanged)
+    Q_PROPERTY(QString ffmpegInstallCommand READ ffmpegInstallCommand CONSTANT)
+
     // ── Recent files ──────────────────────────────────────────────────────────
     Q_PROPERTY(QVariantList recentFiles READ recentFiles NOTIFY recentFilesChanged)
 
@@ -65,6 +70,9 @@ public:
     [[nodiscard]] bool    resultHitFloor()         const { return m_resultHitFloor; }
     [[nodiscard]] QString floorNote()              const { return m_floorNote; }
     [[nodiscard]] QVariantList recentFiles()       const { return m_recentFiles; }
+    [[nodiscard]] bool    hasFfmpeg()              const { return m_hasFfmpeg; }
+    [[nodiscard]] bool    isCurrentFileMedia()     const;
+    [[nodiscard]] QString ffmpegInstallCommand()   const;
 
     [[nodiscard]] SettingsManager*   settingsManager()   { return &m_settingsManager; }
     [[nodiscard]] EdgeWindowManager* edgeWindowManager() { return &m_edgeWindowManager; }
@@ -87,6 +95,8 @@ public:
     Q_INVOKABLE void chooseFile();
     Q_INVOKABLE void chooseOutputFolder();
     Q_INVOKABLE void refreshWallpaper() { m_wallpaperThemeEngine.refreshWallpaper(); }
+    Q_INVOKABLE void checkFfmpegAvailability();
+    Q_INVOKABLE void copyToClipboard(const QString& text);
 
     // Convenience wrappers
     Q_INVOKABLE void setTargetKb(int kb) { setTargetBytes(static_cast<qint64>(kb) * 1024); }
@@ -104,6 +114,7 @@ signals:
     void recentFilesChanged();
     void resetToHomeRequested();
     void errorOccurred(const QString& message);
+    void ffmpegAvailabilityChanged();
 
 private slots:
     void onJobFinished(const EdgeDrop::JobResult& result);
@@ -132,6 +143,7 @@ private:
     double m_compressionProgress = 0.0;
     bool   m_resultHitFloor      = false;
     QString m_floorNote;
+    bool   m_hasFfmpeg           = false;
 
     DetectedFormat m_detectedFormat = DetectedFormat::Unknown;
 };

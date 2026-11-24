@@ -22,6 +22,8 @@ void SettingsManager::load() {
     m_vibe = m_settings.value("vibe", "adaptive").toString().toLower();
     m_launchAtLogin = m_settings.value("launchAtLogin", false).toBool();
     m_isPinned = m_settings.value("isPinned", false).toBool();
+    m_customCardWidth = m_settings.value("customCardWidth", 0).toInt();
+    m_customCardHeight = m_settings.value("customCardHeight", 0).toInt();
     m_recentFiles = m_settings.value("recentFiles").toStringList();
     // Prune missing files
     QStringList valid;
@@ -40,6 +42,8 @@ void SettingsManager::save() {
     m_settings.setValue("vibe", m_vibe);
     m_settings.setValue("launchAtLogin", m_launchAtLogin);
     m_settings.setValue("isPinned", m_isPinned);
+    m_settings.setValue("customCardWidth", m_customCardWidth);
+    m_settings.setValue("customCardHeight", m_customCardHeight);
     m_settings.setValue("recentFiles", m_recentFiles);
 }
 
@@ -131,6 +135,27 @@ void SettingsManager::addRecentFile(const QString& filePath) {
     emit recentFilesChanged(m_recentFiles);
 }
 
+void SettingsManager::setCustomCardWidth(int width) {
+    if (m_customCardWidth != width) {
+        m_customCardWidth = width;
+        m_settings.setValue("customCardWidth", width);
+        emit customCardSizeChanged();
+    }
+}
+
+void SettingsManager::setCustomCardHeight(int height) {
+    if (m_customCardHeight != height) {
+        m_customCardHeight = height;
+        m_settings.setValue("customCardHeight", height);
+        emit customCardSizeChanged();
+    }
+}
+
+void SettingsManager::resetCustomCardSize() {
+    setCustomCardWidth(0);
+    setCustomCardHeight(0);
+}
+
 void SettingsManager::resetSettings() {
     m_settings.clear();
     load();
@@ -143,6 +168,7 @@ void SettingsManager::resetSettings() {
     emit vibeChanged(m_vibe);
     emit launchAtLoginChanged(m_launchAtLogin);
     emit isPinnedChanged(m_isPinned);
+    emit customCardSizeChanged();
     emit recentFilesChanged(m_recentFiles);
 }
 

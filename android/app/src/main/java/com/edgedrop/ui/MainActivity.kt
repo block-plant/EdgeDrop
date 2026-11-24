@@ -1,25 +1,37 @@
 package com.edgedrop.ui
 
-import androidx.compose.foundation.clickable
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,8 +46,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.edgedrop.R
-import com.edgedrop.service.EdgeNotchService
+import com.edgedrop.service.OverlayNotchService
 import com.edgedrop.ui.components.TintedIcon
 import com.edgedrop.ui.theme.EdgeDropTheme
 import com.edgedrop.ui.theme.Vibe
@@ -47,6 +60,7 @@ class MainActivity : ComponentActivity() {
 
     private var incomingFile by mutableStateOf<File?>(null)
     private var hasOverlayPermission by mutableStateOf(false)
+    private var isOverlayActive by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,34 +71,84 @@ class MainActivity : ComponentActivity() {
             val prefs = remember { PreferencesManager(this) }
             val currentVibe = remember { Vibe.fromId(prefs.vibe) }
 
+            // Notification permission launcher for Android 13+
+            val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                if (isGranted && prefs.isOverlayEnabled && hasOverlayPermission) {
+                    OverlayNotchService.start(this)
+                    isOverlayActive = true
+                }
+            }
+
             EdgeDropTheme(vibe = currentVibe) {
                 val theme = EdgeDropTheme.tokens
+                val scrollState = rememberScrollState()
 
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(theme.surface)
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    contentAlignment = Alignment.TopCenter
                 ) {
-                    if (!hasOverlayPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this@MainActivity)) {
-                        OverlayPermissionCard(
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = 420.dp)
+                            .verticalScroll(scrollState),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        // Floating Notch Overlay Status & Quick Controls
+                        FloatingNotchControlCard(
+                            hasOverlayPermission = hasOverlayPermission,
+                            isOverlayActive = isOverlayActive,
+                            onToggleOverlay = { enable ->
+                                prefs.isOverlayEnabled = enable
+                                if (enable) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                        ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.POST_NOTIFICATIONS)
+                                        != PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                    OverlayNotchService.start(this@MainActivity)
+                                    isOverlayActive = true
+                                } else {
+                                    OverlayNotchService.stop(this@MainActivity)
+                                    isOverlayActive = false
+                                }
+                            },
                             onRequestPermission = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                    val intent = Intent(
+                                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                        Uri.parse("package:$packageName")
+                                    )
+                                    startActivity(intent)
+                                }
+                            },
+                            onRecenterNotch = {
+                                OverlayNotchService.recenterNotch(this@MainActivity)
+                            },
+                            onOpenAppSettings = {
                                 val intent = Intent(
-                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                                     Uri.parse("package:$packageName")
                                 )
                                 startActivity(intent)
-                            },
-                            onContinueWithoutOverlay = {
-                                hasOverlayPermission = true
                             }
                         )
-                    } else {
+
+                        // Full In-App Compression Card (Always working offline directly in-app)
                         EdgeDropCard(
                             initialFile = incomingFile,
-                            onClose = { finish() }
+                            onClose = { finish() },
+                            modifier = Modifier.fillMaxWidth()
                         )
+
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
@@ -93,14 +157,18 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        val prefs = PreferencesManager(this)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             hasOverlayPermission = Settings.canDrawOverlays(this)
-            if (hasOverlayPermission) {
-                EdgeNotchService.start(this)
-            }
         } else {
             hasOverlayPermission = true
-            EdgeNotchService.start(this)
+        }
+
+        if (hasOverlayPermission && prefs.isOverlayEnabled) {
+            OverlayNotchService.start(this)
+            isOverlayActive = true
+        } else {
+            isOverlayActive = OverlayNotchService.isRunning()
         }
     }
 
@@ -145,82 +213,181 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Clean, compact status card for the persistent Floating Edge Notch.
+ * Shows overlay state, permission request button, recenter trigger, and OEM guidance.
+ */
 @Composable
-fun OverlayPermissionCard(
+fun FloatingNotchControlCard(
+    hasOverlayPermission: Boolean,
+    isOverlayActive: Boolean,
+    onToggleOverlay: (Boolean) -> Unit,
     onRequestPermission: () -> Unit,
-    onContinueWithoutOverlay: () -> Unit,
+    onRecenterNotch: () -> Unit,
+    onOpenAppSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val theme = EdgeDropTheme.tokens
+    val manufacturer = remember { Build.MANUFACTURER.lowercase() }
+    val isOemSkin = remember {
+        manufacturer.contains("xiaomi") || manufacturer.contains("redmi") ||
+        manufacturer.contains("poco") || manufacturer.contains("oppo") ||
+        manufacturer.contains("realme") || manufacturer.contains("oneplus") ||
+        manufacturer.contains("vivo") || manufacturer.contains("iqoo") ||
+        manufacturer.contains("samsung")
+    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .widthIn(max = 380.dp)
             .clip(RoundedCornerShape(theme.cardRadius))
             .background(theme.surfaceElevated)
             .border(1.dp, theme.borderHairline, RoundedCornerShape(theme.cardRadius))
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
+            .padding(14.dp)
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(theme.pillSurface)
-                    .border(1.dp, theme.borderHairline, CircleShape),
-                contentAlignment = Alignment.Center
+            // Header Row: Icon + Title + Switch / Permission Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                TintedIcon(
-                    resId = R.drawable.ic_drop,
-                    color = theme.accent,
-                    size = 24.dp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(theme.pillSurface)
+                            .border(1.dp, theme.borderHairline, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        TintedIcon(
+                            resId = R.drawable.ic_drop,
+                            color = theme.accent,
+                            size = 18.dp
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = "Floating Edge Notch",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = theme.textPrimary
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (!hasOverlayPermission) Color(0xFFF59E0B)
+                                        else if (isOverlayActive) Color(0xFF10B981)
+                                        else theme.textMuted
+                                    )
+                            )
+                            Text(
+                                text = if (!hasOverlayPermission) "Permission Needed"
+                                else if (isOverlayActive) "Active on Screen Edge"
+                                else "Paused",
+                                fontSize = 11.sp,
+                                color = theme.textSecondary
+                            )
+                        }
+                    }
+                }
+
+                if (hasOverlayPermission) {
+                    Switch(
+                        checked = isOverlayActive,
+                        onCheckedChange = { onToggleOverlay(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = theme.accent,
+                            uncheckedThumbColor = theme.textMuted,
+                            uncheckedTrackColor = theme.pillSurface
+                        )
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(theme.buttonRadius))
+                            .background(theme.accent)
+                            .clickable { onRequestPermission() }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "Enable",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
+                }
             }
 
-            Text(
-                text = "Enable Floating Edge Notch",
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                color = theme.textPrimary,
-                textAlign = TextAlign.Center
-            )
-
-            Text(
-                text = "EdgeDrop lives as a calm, unobtrusive pill on the edge of your screen. Shrink photos, PDFs, and documents instantly from any app without switching windows.",
-                fontSize = 12.sp,
-                color = theme.textSecondary,
-                textAlign = TextAlign.Center,
-                lineHeight = 18.sp
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(theme.buttonRadius))
-                    .background(theme.accent)
-                    .clickable { onRequestPermission() }
-                    .padding(vertical = 11.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Grant Overlay Permission",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
-                )
+            // Quick Actions: Recenter & Overlay Guidance
+            if (hasOverlayPermission && isOverlayActive) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Re-center Notch",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = theme.accent,
+                        modifier = Modifier
+                            .clickable { onRecenterNotch() }
+                            .padding(vertical = 4.dp, horizontal = 6.dp)
+                    )
+                }
             }
 
-            Text(
-                text = "Or use directly in app",
-                fontSize = 12.sp,
-                color = theme.textMuted,
-                modifier = Modifier.clickable { onContinueWithoutOverlay() }
-            )
+            // OEM-specific notice (Xiaomi, Samsung, OnePlus, Oppo, Vivo)
+            if (isOemSkin) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(theme.pillSurface.copy(alpha = 0.5f))
+                        .border(0.5.dp, theme.borderHairline, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Tip: Allow \"Display pop-up windows\" & Autostart in Settings to keep notch persistent.",
+                            fontSize = 10.sp,
+                            color = theme.textSecondary,
+                            lineHeight = 14.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "App Settings",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = theme.accent,
+                            modifier = Modifier
+                                .clickable { onOpenAppSettings() }
+                                .padding(4.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }

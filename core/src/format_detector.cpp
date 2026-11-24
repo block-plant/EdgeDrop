@@ -75,7 +75,7 @@ DetectedFormat FormatDetector::detect(const std::filesystem::path& filePath) {
         return DetectedFormat::TIFF;
     }
 
-    // HEIC / HEIF / MP4 / MOV: check ftyp box (bytes 4..7 == "ftyp")
+    // HEIC / HEIF / MP4 / MOV / M4A: check ftyp box (bytes 4..7 == "ftyp")
     if (bytesRead >= 12 && magic[4] == 'f' && magic[5] == 't' && magic[6] == 'y' && magic[7] == 'p') {
         std::string brand(reinterpret_cast<char*>(magic + 8), 4);
         if (brand == "heic" || brand == "heix" || brand == "mif1" || brand == "msf1" || brand == "hevc") {
@@ -84,7 +84,17 @@ DetectedFormat FormatDetector::detect(const std::filesystem::path& filePath) {
         if (brand == "qt  ") {
             return DetectedFormat::MOV;
         }
+        if (brand == "M4A " || brand == "M4B " || brand == "m4a " || brand == "m4b ") {
+            return DetectedFormat::M4A;
+        }
+        std::string ext = toLower(filePath.extension().string());
+        if (ext == ".m4a") return DetectedFormat::M4A;
         return DetectedFormat::MP4;
+    }
+
+    // AAC: ADTS frame sync (FF F1, FF F9, or FF F8)
+    if (bytesRead >= 2 && magic[0] == 0xFF && (magic[1] & 0xF6) == 0xF0) {
+        return DetectedFormat::AAC;
     }
 
     // MKV / WEBM (EBML ID: 1A 45 DF A3)

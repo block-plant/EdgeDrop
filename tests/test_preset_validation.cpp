@@ -1,4 +1,5 @@
 #include "app/PresetManager.hpp"
+#include "app/SettingsManager.hpp"
 #include <QCoreApplication>
 #include <cassert>
 #include <iostream>
@@ -57,6 +58,17 @@ int main(int argc, char* argv[]) {
     assert(!photos.isEmpty());
     assert(!sigs.isEmpty());
     assert(!docs.isEmpty());
+
+    // SettingsManager Custom Card Size Persistence & Reset
+    EdgeDrop::SettingsManager settings;
+    settings.setCustomCardWidth(450);
+    settings.setCustomCardHeight(520);
+    assert(settings.customCardWidth() == 450);
+    assert(settings.customCardHeight() == 520);
+    settings.resetCustomCardSize();
+    assert(settings.customCardWidth() == 0);
+    assert(settings.customCardHeight() == 0);
+    std::cout << "[PASS] SettingsManager custom resize persistence verified." << std::endl;
 
     std::cout << "[PASS] Preset Validation test passed successfully!" << std::endl;
     return 0;

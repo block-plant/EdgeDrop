@@ -165,6 +165,53 @@ std::string SecurityGuards::generateRandomHex128() {
     return oss.str();
 }
 
+std::filesystem::path SecurityGuards::generateCompressedOutputPath(const std::filesystem::path& inputPath,
+                                                                   const std::filesystem::path& outputDir,
+                                                                   const std::string& extension) {
+    std::string stem = inputPath.stem().string();
+    std::string ext = extension.empty() ? inputPath.extension().string() : extension;
+    if (!ext.empty() && ext[0] != '.') ext = "." + ext;
+
+    // Strip duplicate suffixes like _compressed, _compressed_2, _compressed (1)
+    std::string base = stem;
+    while (true) {
+        if (!base.empty() && base.back() == ')') {
+            auto openParen = base.rfind(" (");
+            if (openParen != std::string::npos && openParen + 2 < base.size() - 1) {
+                bool allDigits = true;
+                for (size_t i = openParen + 2; i < base.size() - 1; ++i) {
+                    if (!std::isdigit(static_cast<unsigned char>(base[i]))) { allDigits = false; break; }
+                }
+                if (allDigits) base = base.substr(0, openParen);
+            }
+        }
+        size_t lastUnderscore = base.rfind('_');
+        if (lastUnderscore != std::string::npos && lastUnderscore + 1 < base.size()) {
+            bool allDigits = true;
+            for (size_t i = lastUnderscore + 1; i < base.size(); ++i) {
+                if (!std::isdigit(static_cast<unsigned char>(base[i]))) { allDigits = false; break; }
+            }
+            if (allDigits) base = base.substr(0, lastUnderscore);
+        }
+        const std::string sfx = "_compressed";
+        if (base.size() >= sfx.size() && base.compare(base.size() - sfx.size(), sfx.size(), sfx) == 0) {
+            base = base.substr(0, base.size() - sfx.size());
+            continue;
+        }
+        break;
+    }
+
+    if (base.empty()) base = "file";
+
+    std::filesystem::path out = outputDir / (base + "_compressed" + ext);
+    int idx = 2;
+    while (std::filesystem::exists(out)) {
+        out = outputDir / (base + "_compressed_" + std::to_string(idx) + ext);
+        ++idx;
+    }
+    return out;
+}
+
 bool SecurityGuards::verifyOutputMagic(const std::filesystem::path& path, std::string_view expectedFormat) {
     std::error_code ec;
     if (!std::filesystem::exists(path, ec) || std::filesystem::file_size(path, ec) == 0) {

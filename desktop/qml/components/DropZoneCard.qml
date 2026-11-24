@@ -5,7 +5,10 @@ import EdgeDrop
 Item {
     id: root
 
+    implicitHeight: mainCol.implicitHeight
+
     Column {
+        id: mainCol
         anchors.fill: parent
         spacing: 12
 
@@ -13,7 +16,10 @@ Item {
         Rectangle {
             id: dropZone
             width: parent.width
-            height: recentRowCol.visible ? (parent.height - recentRowCol.height - 12) : parent.height
+            implicitHeight: dropContentCol.implicitHeight + 40
+            height: recentRowCol.visible
+                    ? Math.max(implicitHeight, parent.height - recentRowCol.implicitHeight - 12)
+                    : Math.max(implicitHeight, parent.height)
             radius: Theme.radiusInner
             color: rootDropArea.containsDrag ? Theme.accentSurface : (dropZoneHover.hovered ? Theme.elevatedHover : Theme.surfaceElevated)
             border.color: rootDropArea.containsDrag ? Theme.accent : (dropZoneHover.hovered ? Theme.activeBorder : Theme.borderHairline)
@@ -28,9 +34,10 @@ Item {
             }
 
             Column {
+                id: dropContentCol
                 anchors.centerIn: parent
-                spacing: 10
-                width: parent.width - 24
+                spacing: 8
+                width: parent.width - 36
 
                 // Centred 36x36dp soft icon badge with 18dp cloud/drop icon
                 Rectangle {
@@ -54,7 +61,7 @@ Item {
                 // Everyday human labels
                 Column {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: 4
+                    spacing: 3
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -74,9 +81,11 @@ Item {
 
                     Text {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        text: "JPG · PNG · WebP · HEIC · PDF · DOCX · PPTX · MP4 · MP3 · Up to 2 GB"
+                        text: "JPG · PNG · WebP · HEIC · PDF · DOCX · PPTX\nMP4 · MOV · MP3 · M4A · WAV · Up to 2 GB"
                         font.pixelSize: 9
                         color: Theme.textMuted
+                        horizontalAlignment: Text.AlignHCenter
+                        lineHeight: 1.3
                     }
                 }
 
@@ -156,6 +165,7 @@ Item {
             visible: appController.recentFiles.length > 0
 
             Text {
+                id: recentLabel
                 text: "Recent"
                 font.pixelSize: 11
                 font.weight: Font.Medium
@@ -169,7 +179,7 @@ Item {
                 Repeater {
                     model: appController.recentFiles
                     delegate: Rectangle {
-                        width: (parent.width - 12) / Math.max(1, appController.recentFiles.length)
+                        width: (parent.width - ((appController.recentFiles.length - 1) * 6)) / Math.max(1, appController.recentFiles.length)
                         height: 28
                         radius: Theme.radiusSmall
                         color: chipHover.hovered ? Theme.elevatedHover : Theme.surfaceElevated

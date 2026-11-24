@@ -458,16 +458,143 @@ Item {
             }
         }
 
+        // ── 3b. Missing FFmpeg Notice for Media Files ────────────────────────
+        Rectangle {
+            id: ffmpegNotice
+            width: parent.width
+            visible: appController.isCurrentFileMedia && !appController.hasFfmpeg
+            height: visible ? noticeCol.implicitHeight + 16 : 0
+            radius: 8
+            color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.08)
+            border.color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.25)
+            border.width: 1
+            clip: true
+
+            Column {
+                id: noticeCol
+                anchors.left: parent.left
+                anchors.leftMargin: 10
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 6
+
+                Text {
+                    width: parent.width
+                    text: "Video and audio compression requires local FFmpeg."
+                    font.pixelSize: 11
+                    font.weight: Font.Medium
+                    color: Theme.textPrimary
+                    wrapMode: Text.Wrap
+                }
+
+                Row {
+                    width: parent.width
+                    spacing: 6
+
+                    Rectangle {
+                        height: 24
+                        width: parent.width - 66
+                        radius: 4
+                        color: Theme.surfaceElevated
+                        border.color: Theme.borderHairline
+                        border.width: 1
+
+                        Text {
+                            anchors.left: parent.left
+                            anchors.leftMargin: 6
+                            anchors.right: parent.right
+                            anchors.rightMargin: 6
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: appController.ffmpegInstallCommand
+                            font.pixelSize: 10
+                            font.family: "monospace"
+                            color: Theme.textSecondary
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    Rectangle {
+                        width: 60
+                        height: 24
+                        radius: 4
+                        color: copyHover.hovered ? Theme.accentHover : Theme.accent
+
+                        HoverHandler {
+                            id: copyHover
+                            blocking: false
+                        }
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: copyTimer.running ? "Copied!" : "Copy"
+                            font.pixelSize: 10
+                            font.weight: Font.DemiBold
+                            color: Theme.textOnAccent
+                        }
+
+                        Timer {
+                            id: copyTimer
+                            interval: 1500
+                            repeat: false
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                appController.copyToClipboard(appController.ffmpegInstallCommand);
+                                copyTimer.restart();
+                            }
+                        }
+                    }
+                }
+
+                Row {
+                    spacing: 4
+                    Text {
+                        text: "Installed it already?"
+                        font.pixelSize: 10
+                        color: Theme.textMuted
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        text: "Recheck"
+                        font.pixelSize: 10
+                        font.weight: Font.DemiBold
+                        color: recheckHover.hovered ? Theme.accentHover : Theme.accent
+                        font.underline: true
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        HoverHandler {
+                            id: recheckHover
+                            blocking: false
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: appController.checkFfmpegAvailability()
+                        }
+                    }
+                }
+            }
+        }
+
         // ── 4. Full-Width High-Contrast Compress CTA ──────────────────────────
         Rectangle {
             id: compressBtn
             width: parent.width
             height: 40
             radius: 10
-            opacity: appController.isProcessing ? 0.6 : 1.0
-            color: (compressHover.hovered && !appController.isProcessing) ? Theme.accentHover : Theme.accent
+            property bool isFfmpegMissing: appController.isCurrentFileMedia && !appController.hasFfmpeg
+            property bool canCompress: !appController.isProcessing && !isFfmpegMissing
 
-            scale: compressMouse.pressed ? 0.98 : 1.0
+            opacity: canCompress ? 1.0 : 0.5
+            color: (compressHover.hovered && canCompress) ? Theme.accentHover : Theme.accent
+
+            scale: (compressMouse.pressed && canCompress) ? 0.98 : 1.0
             Behavior on scale { NumberAnimation { duration: 100 } }
             Behavior on color { ColorAnimation { duration: Theme.animHoverMs; easing.type: Easing.OutCubic } }
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -482,15 +609,16 @@ Item {
                 spacing: 6
 
                 Text {
-                    text: appController.isProcessing ? "Shrinking…" : "Compress"
-                    font.pixelSize: 13
+                    text: compressBtn.isFfmpegMissing ? "Install FFmpeg to Compress"
+                        : (appController.isProcessing ? "Shrinking…" : "Compress")
+                    font.pixelSize: compressBtn.isFfmpegMissing ? 12 : 13
                     font.weight: Font.DemiBold
                     color: Theme.textOnAccent
                     anchors.verticalCenter: parent.verticalCenter
                 }
 
                 Text {
-                    visible: !appController.isProcessing
+                    visible: compressBtn.canCompress
                     text: "↵"
                     font.pixelSize: 11
                     color: Qt.rgba(1, 1, 1, 0.75)
@@ -501,8 +629,8 @@ Item {
             MouseArea {
                 id: compressMouse
                 anchors.fill: parent
-                enabled: !appController.isProcessing
-                cursorShape: appController.isProcessing ? Qt.BusyCursor : Qt.PointingHandCursor
+                enabled: compressBtn.canCompress
+                cursorShape: appController.isProcessing ? Qt.BusyCursor : (compressBtn.canCompress ? Qt.PointingHandCursor : Qt.ArrowCursor)
                 onClicked: {
                     mainWindow.requestActivate();
                     appController.processCurrent();

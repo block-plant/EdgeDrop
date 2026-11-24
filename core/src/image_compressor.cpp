@@ -346,7 +346,7 @@ std::vector<uint8_t> ImageCompressor::pngCompress(cv::Mat& img, size_t targetMax
         std::vector<uint8_t> encoded;
         if (lodepng::encode_indexed(encoded, indexed.data(), currentRgba.cols, currentRgba.rows, palette) == 0) {
             bestEncoded = encoded;
-            if (encoded.size() <= targetMaxBytes * 0.97) {
+            if (encoded.size() <= static_cast<size_t>(targetMaxBytes * 0.99)) {
                 return encoded;
             }
         }
@@ -406,7 +406,8 @@ std::vector<uint8_t> ImageCompressor::jpegBinarySearch(cv::Mat& img,
     }
 
     cv::Mat working = img;
-    size_t effectiveTarget = static_cast<size_t>(targetMaxBytes * 0.97);
+    size_t effectiveTarget = static_cast<size_t>(targetMaxBytes * 0.99);
+    std::vector<uint8_t> smallestBuf;
 
     // Progressive scale passes if initial encode at Q=18 is too large
     for (int pass = 0; pass < 4; ++pass) {
@@ -417,6 +418,9 @@ std::vector<uint8_t> ImageCompressor::jpegBinarySearch(cv::Mat& img,
         while (low <= high) {
             int mid = low + (high - low) / 2;
             auto buf = encodeAt(working, mid);
+            if (smallestBuf.empty() || buf.size() < smallestBuf.size()) {
+                smallestBuf = buf;
+            }
             if (buf.size() <= effectiveTarget) {
                 bestBuf = std::move(buf);
                 low = mid + 1; // Try higher quality
@@ -433,6 +437,9 @@ std::vector<uint8_t> ImageCompressor::jpegBinarySearch(cv::Mat& img,
         if (lockDimensions) break;
 
         auto q18 = encodeAt(working, 18);
+        if (smallestBuf.empty() || q18.size() < smallestBuf.size()) {
+            smallestBuf = q18;
+        }
         double currBytes = static_cast<double>(q18.size());
         double scale = std::clamp(std::sqrt(static_cast<double>(effectiveTarget) / currBytes) * 0.95, 0.15, 0.95);
         if (scale >= 0.98) scale = 0.90;
@@ -442,6 +449,10 @@ std::vector<uint8_t> ImageCompressor::jpegBinarySearch(cv::Mat& img,
         if (newW == working.cols && newH == working.rows) break;
 
         cv::resize(working, working, cv::Size(newW, newH), 0, 0, cv::INTER_AREA);
+    }
+
+    if (!smallestBuf.empty()) {
+        return smallestBuf;
     }
 
     // Final fallback: encode at minimum quality
@@ -478,17 +489,9 @@ JobResult ImageCompressor::compress(const JobRequest& req,
         : req.outputDirectory;
     std::filesystem::create_directories(outDir);
 
-    std::string stem = req.inputFilePath.stem().string();
     std::string ext = FormatDetector::outputExtension(req.detectedFormat);
     if (ext.empty()) ext = req.inputFilePath.extension().string();
-
-    std::filesystem::path outPath;
-    int ctr = 0;
-    do {
-        std::string sfx = (ctr == 0) ? "" : " (" + std::to_string(ctr) + ")";
-        outPath = outDir / (stem + "_compressed" + sfx + ext);
-        ++ctr;
-    } while (std::filesystem::exists(outPath));
+    std::filesystem::path outPath = SecurityGuards::generateCompressedOutputPath(req.inputFilePath, outDir, ext);
 
     // ── Pass-Through Guard ────────────────────────────────────────────────────
     if (req.targetBytes > 0 && result.inputSizeBytes <= req.targetBytes) {

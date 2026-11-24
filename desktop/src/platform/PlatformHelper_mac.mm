@@ -246,6 +246,10 @@ void PlatformHelper::copyFileToClipboard(const QString& filePath) {
     QGuiApplication::clipboard()->setMimeData(mime);
 }
 
+bool PlatformHelper::isWayland() {
+    return false;
+}
+
 void PlatformHelper::lockWindowSize(QQuickWindow* window, int width, int /*height*/) {
     if (!window) return;
 #ifdef __APPLE__

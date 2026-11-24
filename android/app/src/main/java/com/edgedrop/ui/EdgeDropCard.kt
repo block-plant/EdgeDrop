@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -56,6 +57,7 @@ import java.io.File
 fun EdgeDropCard(
     initialFile: File? = null,
     onClose: () -> Unit = {},
+    onLaunchFilePicker: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -92,23 +94,32 @@ fun EdgeDropCard(
         }
     }
 
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            val cached = FileUtils.copyUriToCache(context, uri)
-            if (cached != null) {
-                selectedFile = cached
-                detectedFormat = engine.detectFormat(cached)
-                compressionResult = null
-                prefs.addRecentFile(cached.absolutePath)
-                recentFiles = prefs.recentFiles
+    val registryOwner = LocalActivityResultRegistryOwner.current
+    val filePickerLauncher = if (registryOwner != null && onLaunchFilePicker == null) {
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument()
+        ) { uri ->
+            if (uri != null) {
+                val cached = FileUtils.copyUriToCache(context, uri)
+                if (cached != null) {
+                    selectedFile = cached
+                    detectedFormat = engine.detectFormat(cached)
+                    compressionResult = null
+                    prefs.addRecentFile(cached.absolutePath)
+                    recentFiles = prefs.recentFiles
+                }
             }
         }
+    } else {
+        null
     }
 
     fun chooseFile() {
-        filePickerLauncher.launch(arrayOf("*/*"))
+        if (onLaunchFilePicker != null) {
+            onLaunchFilePicker()
+        } else {
+            filePickerLauncher?.launch(arrayOf("*/*"))
+        }
     }
 
     fun pasteFromClipboard() {

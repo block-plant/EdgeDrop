@@ -55,7 +55,13 @@ bool PlatformHelper::isWayland() {
         return true;
     }
     const char* display = std::getenv("WAYLAND_DISPLAY");
-    return display != nullptr;
+    if (display != nullptr) {
+        return true;
+    }
+    if (QGuiApplication::platformName().contains("wayland", Qt::CaseInsensitive)) {
+        return true;
+    }
+    return false;
 }
 
 void PlatformHelper::lockWindowSize(QQuickWindow* /*window*/, int /*width*/, int /*height*/) {

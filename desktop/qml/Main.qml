@@ -25,20 +25,31 @@ Window {
 
     function updateActiveCardHeight() {
         if (!edgeWindowManager.isExpanded) return;
+        var h = 246;
         if (activeView === "settings") {
-            edgeWindowManager.cardHeight = 224;
+            h = 264;
         } else if (activeView === "home") {
-            edgeWindowManager.cardHeight = (appController.recentFiles && appController.recentFiles.length > 0) ? 244 : 196;
+            h = (appController.recentFiles && appController.recentFiles.length > 0) ? 306 : 246;
         } else if (activeView === "config") {
             var batchCount = appController.loadedFiles ? appController.loadedFiles.length : 0;
+            var baseHeight = (appController.isCurrentFileMedia && !appController.hasFfmpeg) ? 376 : 292;
             if (batchCount > 1) {
-                edgeWindowManager.cardHeight = Math.min(420, 296 + (batchCount - 1) * 28);
+                h = Math.min(460, baseHeight + (batchCount - 1) * 32);
             } else {
-                edgeWindowManager.cardHeight = 296;
+                h = baseHeight;
             }
         } else if (activeView === "result") {
-            edgeWindowManager.cardHeight = 280;
+            if (appController.isProcessing) {
+                h = 220;
+            } else if (appController.currentResult && appController.currentResult.success === false) {
+                h = 210;
+            } else if (appController.resultHitFloor || (appController.floorNote && appController.floorNote.length > 0)) {
+                h = 268;
+            } else {
+                h = 232;
+            }
         }
+        edgeWindowManager.setActiveViewAutoHeight(h);
     }
 
     onActiveViewChanged: updateActiveCardHeight()
@@ -55,6 +66,7 @@ Window {
                 !appController.isProcessing &&
                 !edgeWindowManager.isRepositioning &&
                 !edgeWindowManager.isSnapping &&
+                !edgeWindowManager.isResizing &&
                 isAutoHideEligible &&
                 !cardHoverHandler.hovered) {
                 edgeWindowManager.isExpanded = false;
@@ -81,6 +93,20 @@ Window {
         function onResetToHomeRequested() {
             settingsOpen = false;
             mainWindow.updateActiveCardHeight();
+        }
+        function onCurrentResultChanged() {
+            mainWindow.updateActiveCardHeight();
+        }
+        function onIsProcessingChanged() {
+            mainWindow.updateActiveCardHeight();
+        }
+        function onFfmpegAvailabilityChanged() {
+            mainWindow.updateActiveCardHeight();
+        }
+        function onErrorOccurred(message) {
+            expandedContent.lastErrorMessage = message;
+            expandedContent.showErrorBanner = true;
+            errorBannerTimer.restart();
         }
     }
 
@@ -176,6 +202,7 @@ Window {
                         !appController.isProcessing &&
                         !edgeWindowManager.isRepositioning &&
                         !edgeWindowManager.isSnapping &&
+                        !edgeWindowManager.isResizing &&
                         mainWindow.isAutoHideEligible &&
                         settingsManager.autoHideDelayMs > 0) {
                         autoHideTimer.restart();
@@ -604,11 +631,68 @@ Window {
                 }
             }
 
-            // ── Content Container (Strictly below topBar, 16dp margins) ───────────
+            property string lastErrorMessage: ""
+            property bool showErrorBanner: false
+
+            Timer {
+                id: errorBannerTimer
+                interval: 4000
+                repeat: false
+                onTriggered: expandedContent.showErrorBanner = false
+            }
+
+            // Inline error banner beneath topBar
+            Rectangle {
+                id: errorBanner
+                anchors.top: topBar.bottom
+                anchors.topMargin: expandedContent.showErrorBanner ? 6 : 0
+                anchors.left: parent.left
+                anchors.leftMargin: 16
+                anchors.right: parent.right
+                anchors.rightMargin: 16
+                height: expandedContent.showErrorBanner ? (errorText.implicitHeight + 12) : 0
+                visible: height > 0
+                opacity: expandedContent.showErrorBanner ? 1.0 : 0.0
+                radius: Theme.radiusSmall
+                color: Qt.rgba(Theme.error.r, Theme.error.g, Theme.error.b, 0.15)
+                border.color: Theme.error
+                border.width: 1
+                clip: true
+                Behavior on height { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                Behavior on opacity { NumberAnimation { duration: 150 } }
+
+                Row {
+                    anchors.centerIn: parent
+                    width: parent.width - 16
+                    spacing: 6
+
+                    Text {
+                        text: "!"
+                        font.pixelSize: 11
+                        font.weight: Font.Bold
+                        color: Theme.error
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Text {
+                        id: errorText
+                        width: parent.width - 18
+                        text: expandedContent.lastErrorMessage
+                        font.pixelSize: 11
+                        color: Theme.error
+                        wrapMode: Text.Wrap
+                        elide: Text.ElideRight
+                        maximumLineCount: 2
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+            }
+
+            // ── Content Container (Strictly below errorBanner, 16dp margins) ───────────
             Item {
                 id: viewsContainer
-                anchors.top: topBar.bottom
-                anchors.topMargin: 12
+                anchors.top: errorBanner.bottom
+                anchors.topMargin: expandedContent.showErrorBanner ? 6 : 12
                 anchors.left: parent.left
                 anchors.leftMargin: 16
                 anchors.right: parent.right
@@ -657,66 +741,131 @@ Window {
             }
         }
 
-        // Resize Grip at bottom corner opposite to screen edge
-        Item {
-            id: resizeHandle
+        // ── Production-Grade Resize Handles ───────────────────────────────────────
+        // 1. Left Edge Drag Zone (~6px invisible)
+        MouseArea {
+            id: resizeLeftEdge
+            visible: edgeWindowManager.isExpanded && !edgeWindowManager.isRepositioning && !edgeWindowManager.isSnapping
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.topMargin: 16
+            anchors.bottomMargin: 16
+            width: 6
+            z: 998
+            hoverEnabled: true
+            preventStealing: true
+            cursorShape: Qt.SizeHorCursor
+            onPressed: edgeWindowManager.startCardResize(edgeWindowManager.handleLeft)
+            onPositionChanged: edgeWindowManager.updateCardResize()
+            onReleased: edgeWindowManager.endCardResize()
+        }
+
+        // 2. Right Edge Drag Zone (~6px invisible)
+        MouseArea {
+            id: resizeRightEdge
+            visible: edgeWindowManager.isExpanded && !edgeWindowManager.isRepositioning && !edgeWindowManager.isSnapping
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.topMargin: 16
+            anchors.bottomMargin: 16
+            width: 6
+            z: 998
+            hoverEnabled: true
+            preventStealing: true
+            cursorShape: Qt.SizeHorCursor
+            onPressed: edgeWindowManager.startCardResize(edgeWindowManager.handleRight)
+            onPositionChanged: edgeWindowManager.updateCardResize()
+            onReleased: edgeWindowManager.endCardResize()
+        }
+
+        // 3. Bottom Edge Drag Zone (~6px invisible)
+        MouseArea {
+            id: resizeBottomEdge
             visible: edgeWindowManager.isExpanded && !edgeWindowManager.isRepositioning && !edgeWindowManager.isSnapping
             anchors.bottom: parent.bottom
-            anchors.right: edgeWindowManager.screenEdge === "left" ? parent.right : undefined
-            anchors.left: edgeWindowManager.screenEdge === "right" ? parent.left : undefined
-            width: 20
-            height: 20
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: 16
+            anchors.rightMargin: 16
+            height: 6
             z: 998
+            hoverEnabled: true
+            preventStealing: true
+            cursorShape: Qt.SizeVerCursor
+            onPressed: edgeWindowManager.startCardResize(edgeWindowManager.handleBottom)
+            onPositionChanged: edgeWindowManager.updateCardResize()
+            onReleased: edgeWindowManager.endCardResize()
+        }
+
+        // 4. Bottom-Right Corner Resize Grip (Subtle, recessed corner indicator)
+        Item {
+            id: resizeBottomRightCorner
+            visible: edgeWindowManager.isExpanded && !edgeWindowManager.isRepositioning && !edgeWindowManager.isSnapping
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            anchors.bottomMargin: 3
+            anchors.rightMargin: 3
+            width: 12
+            height: 12
+            z: 999
 
             Canvas {
-                id: resizeGripCanvas
+                id: resizeCornerCanvas
                 anchors.fill: parent
+                opacity: (resizeCornerMouse.containsMouse || resizeCornerMouse.pressed) ? 0.85 : 0.25
+                Behavior on opacity { NumberAnimation { duration: 150 } }
+
                 onPaint: {
                     var ctx = getContext("2d");
                     ctx.clearRect(0, 0, width, height);
-                    ctx.strokeStyle = resizeHover.hovered ? Theme.accent : Theme.textMuted;
-                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = (resizeCornerMouse.containsMouse || resizeCornerMouse.pressed) ? Theme.accent : Theme.textMuted;
+                    ctx.lineWidth = 1.2;
                     ctx.lineCap = "round";
-                    if (edgeWindowManager.screenEdge === "left") {
-                        ctx.beginPath();
-                        ctx.moveTo(width - 5, height - 12);
-                        ctx.lineTo(width - 12, height - 5);
-                        ctx.moveTo(width - 5, height - 7);
-                        ctx.lineTo(width - 7, height - 5);
-                        ctx.stroke();
-                    } else {
-                        ctx.beginPath();
-                        ctx.moveTo(5, height - 12);
-                        ctx.lineTo(12, height - 5);
-                        ctx.moveTo(5, height - 7);
-                        ctx.lineTo(7, height - 5);
-                        ctx.stroke();
-                    }
+                    ctx.beginPath();
+                    // Subtle curved corner arc 1
+                    ctx.moveTo(width - 2, height - 7);
+                    ctx.lineTo(width - 7, height - 2);
+                    // Subtle curved corner arc 2
+                    ctx.moveTo(width - 2, height - 4);
+                    ctx.lineTo(width - 4, height - 2);
+                    ctx.stroke();
                 }
-            }
-
-            HoverHandler {
-                id: resizeHover
-                blocking: false
-                onHoveredChanged: resizeGripCanvas.requestPaint()
             }
 
             MouseArea {
+                id: resizeCornerMouse
                 anchors.fill: parent
-                cursorShape: edgeWindowManager.screenEdge === "left" ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor
-                property int startX: 0
-                property int startY: 0
-                onPressed: (mouse) => {
-                    startX = mouse.x;
-                    startY = mouse.y;
-                }
-                onPositionChanged: (mouse) => {
-                    var dx = mouse.x - startX;
-                    var dy = mouse.y - startY;
-                    var deltaW = (edgeWindowManager.screenEdge === "left") ? dx : -dx;
-                    edgeWindowManager.resizeCard(deltaW, dy);
-                }
+                hoverEnabled: true
+                preventStealing: true
+                cursorShape: Qt.SizeFDiagCursor
+                onPressed: edgeWindowManager.startCardResize(edgeWindowManager.handleBottomRight)
+                onPositionChanged: edgeWindowManager.updateCardResize()
+                onReleased: edgeWindowManager.endCardResize()
+                onDoubleClicked: edgeWindowManager.resetCustomSize()
+                onContainsMouseChanged: resizeCornerCanvas.requestPaint()
             }
+        }
+
+        // 5. Bottom-Left Corner Hit Area (Invisible hit area when docked on right edge)
+        MouseArea {
+            id: resizeBottomLeftMouse
+            visible: edgeWindowManager.isExpanded && !edgeWindowManager.isRepositioning && !edgeWindowManager.isSnapping && edgeWindowManager.screenEdge === "right"
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.bottomMargin: 2
+            anchors.leftMargin: 2
+            width: 12
+            height: 12
+            z: 999
+            hoverEnabled: true
+            preventStealing: true
+            cursorShape: Qt.SizeBDiagCursor
+            onPressed: edgeWindowManager.startCardResize(edgeWindowManager.handleBottomLeft)
+            onPositionChanged: edgeWindowManager.updateCardResize()
+            onReleased: edgeWindowManager.endCardResize()
+            onDoubleClicked: edgeWindowManager.resetCustomSize()
         }
     }
 }

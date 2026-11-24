@@ -57,7 +57,7 @@ SubprocessResult DefaultSubprocessRunner::run(const std::string& program,
     std::vector<char> cmdVec(cmdLine.begin(), cmdLine.end());
     cmdVec.push_back('\0');
 
-    if (!CreateProcessA(NULL, cmdVec.data(), NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
+    if (!CreateProcessA(NULL, cmdVec.data(), NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
         CloseHandle(hStdOutRead); CloseHandle(hStdOutWrite);
         CloseHandle(hStdErrRead); CloseHandle(hStdErrWrite);
         res.exitCode = -1;

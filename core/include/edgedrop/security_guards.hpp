@@ -28,6 +28,11 @@ public:
     // Cryptographically secure random 128-bit hex string (32 hex characters).
     static std::string generateRandomHex128();
 
+    // Generates a unique output path with clean non-duplicate naming (e.g. file_compressed.ext, file_compressed_2.ext)
+    static std::filesystem::path generateCompressedOutputPath(const std::filesystem::path& inputPath,
+                                                             const std::filesystem::path& outputDir,
+                                                             const std::string& extension = "");
+
     // Verifies output file has non-zero size and matches expected magic bytes.
     static bool verifyOutputMagic(const std::filesystem::path& path, std::string_view expectedFormat);
 

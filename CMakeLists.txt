@@ -239,7 +239,13 @@ if(EDGEDROP_BUILD_DESKTOP)
     )
 
     if(WIN32)
-        set_target_properties(edgedrop PROPERTIES OUTPUT_NAME "EdgeDrop")
+        set_target_properties(edgedrop PROPERTIES
+            OUTPUT_NAME "EdgeDrop"
+            WIN32_EXECUTABLE TRUE
+        )
+        if(MSVC)
+            target_link_options(edgedrop PRIVATE "/SUBSYSTEM:WINDOWS" "/ENTRY:mainCRTStartup")
+        endif()
     endif()
 
     set_source_files_properties(desktop/qml/Theme.qml

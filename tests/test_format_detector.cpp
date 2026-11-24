@@ -108,7 +108,21 @@ int main() {
         check("OGG magic", FormatDetector::detect(p), DetectedFormat::OGG);
     }
 
-    // 12. Corrupt / 0-byte file rejection
+    // 12. M4A
+    {
+        auto p = tmpDir / "test.m4a";
+        writeFile(p, {0, 0, 0, 0x18, 'f', 't', 'y', 'p', 'M', '4', 'A', ' '});
+        check("M4A magic", FormatDetector::detect(p), DetectedFormat::M4A);
+    }
+
+    // 13. AAC (ADTS frame)
+    {
+        auto p = tmpDir / "test.aac";
+        writeFile(p, {0xFF, 0xF1, 0x4C, 0x80});
+        check("AAC ADTS magic", FormatDetector::detect(p), DetectedFormat::AAC);
+    }
+
+    // 14. Corrupt / 0-byte file rejection
     {
         auto p = tmpDir / "empty.dat";
         std::ofstream f(p);
@@ -116,7 +130,7 @@ int main() {
         check("0-byte file rejection", FormatDetector::detect(p), DetectedFormat::Unknown);
     }
 
-    // 13. Non-existent file rejection
+    // 15. Non-existent file rejection
     {
         auto p = tmpDir / "non_existent_file.xyz";
         check("Non-existent file rejection", FormatDetector::detect(p), DetectedFormat::Unknown);

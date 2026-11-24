@@ -52,7 +52,25 @@
             </intent-filter>
         </activity>
 
+        <!-- Document Picker Proxy for Background Overlay -->
+        <activity
+            android:name=".service.FilePickerProxyActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:exported="false" />
+
         <!-- Floating Overlay Foreground Service (Android 14+ Special Use Compliant) -->
+        <service
+            android:name=".service.OverlayNotchService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Floating Edge Compression Tool Overlay" />
+        </service>
+
         <service
             android:name=".service.EdgeNotchService"
             android:enabled="true"

@@ -321,6 +321,58 @@ static void test_secure_temp_file() {
     std::cout << "  ✓ SecureTempFile enforces 0600 permissions and auto-unlink on discard." << std::endl;
 }
 
+static void test_output_filename_deduplication() {
+    std::cout << "[Test 7] Testing output filename generation and deduplication..." << std::endl;
+    fs::path tempDir = fs::temp_directory_path() / "edgedrop_sec_test_dedup";
+    fs::create_directories(tempDir);
+
+    fs::path inPath = tempDir / "photo.jpg";
+    fs::path out1 = SecurityGuards::generateCompressedOutputPath(inPath, tempDir, ".jpg");
+    assert(out1 == tempDir / "photo_compressed.jpg");
+
+    // Create photo_compressed.jpg so next call must deduplicate
+    std::ofstream(out1) << "dummy";
+    fs::path out2 = SecurityGuards::generateCompressedOutputPath(inPath, tempDir, ".jpg");
+    assert(out2 == tempDir / "photo_compressed_2.jpg");
+
+    // Create photo_compressed_2.jpg
+    std::ofstream(out2) << "dummy";
+    fs::path out3 = SecurityGuards::generateCompressedOutputPath(inPath, tempDir, ".jpg");
+    assert(out3 == tempDir / "photo_compressed_3.jpg");
+
+    // Test input file already named with _compressed suffix does not become photo_compressed_compressed.jpg
+    fs::path inAlreadyCompressed = tempDir / "document_compressed.pdf";
+    fs::path outDoc1 = SecurityGuards::generateCompressedOutputPath(inAlreadyCompressed, tempDir, ".pdf");
+    assert(outDoc1 == tempDir / "document_compressed.pdf");
+
+    std::ofstream(outDoc1) << "dummy";
+    fs::path outDoc2 = SecurityGuards::generateCompressedOutputPath(inAlreadyCompressed, tempDir, ".pdf");
+    assert(outDoc2 == tempDir / "document_compressed_2.pdf");
+
+    fs::remove_all(tempDir);
+    std::cout << "  ✓ Filename generation strips duplicate _compressed suffixes and increments cleanly." << std::endl;
+}
+
+static void test_oversized_and_invalid_inputs() {
+    std::cout << "[Test 8] Testing oversized and invalid input validation..." << std::endl;
+    fs::path tempDir = fs::temp_directory_path() / "edgedrop_sec_test_oversized";
+    fs::create_directories(tempDir);
+
+    // Non-existent path
+    assert(!SecurityGuards::validateInputFile(tempDir / "does_not_exist.png"));
+
+    // Empty path
+    assert(!SecurityGuards::validateInputFile(fs::path()));
+
+    // 0-byte file
+    fs::path zeroByte = tempDir / "empty.bin";
+    std::ofstream(zeroByte).close();
+    assert(!SecurityGuards::validateInputFile(zeroByte));
+
+    fs::remove_all(tempDir);
+    std::cout << "  ✓ Input validation properly rejects non-existent, empty, and 0-byte files." << std::endl;
+}
+
 int main() {
     std::cout << "=== EdgeDrop Defense-in-Depth Security Test Suite ===" << std::endl;
     test_zip_slip_rejection();
@@ -329,6 +381,8 @@ int main() {
     test_input_path_validation();
     test_magic_bytes_verification();
     test_secure_temp_file();
-    std::cout << "=== All Security Tests Passed Successfully (6/6) ===" << std::endl;
+    test_output_filename_deduplication();
+    test_oversized_and_invalid_inputs();
+    std::cout << "=== All Security Tests Passed Successfully (8/8) ===" << std::endl;
     return 0;
 }

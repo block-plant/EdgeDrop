@@ -1,4 +1,5 @@
 #include "app/AppController.hpp"
+#include "app/EdgeWindowManager.hpp"
 #include "engine/QtSubprocessRunner.hpp"
 #include "edgedrop/compressor_router.hpp"
 #include "platform/PlatformHelper.hpp"
@@ -61,6 +62,10 @@ int main(int argc, char *argv[]) {
   app.setQuitOnLastWindowClosed(false);
 
   QQmlApplicationEngine engine;
+
+  qmlRegisterUncreatableType<EdgeDrop::EdgeWindowManager>(
+      "EdgeDrop", 1, 0, "EdgeWindowManager",
+      "EdgeWindowManager cannot be created from QML");
 
   EdgeDrop::AppController controller;
   engine.rootContext()->setContextProperty("appController", &controller);
