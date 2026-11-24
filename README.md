@@ -149,7 +149,4 @@ ctest --test-dir build --output-on-failure
 
 ---
 
-## License
-
-EdgeDrop is released under the [MIT License](LICENSE).
 Completely offline. Zero tracking. Zero telemetry.
