@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Stepped compression bars docked to x=72, centered within 66dp safe zone -->
+    <path
+        android:fillColor="#F4F5F7"
+        android:pathData="M39.5,38 h29 a3.5,3.5 0 0,1 3.5,3.5 a3.5,3.5 0 0,1 -3.5,3.5 h-29 a3.5,3.5 0 0,1 -3.5,-3.5 a3.5,3.5 0 0,1 3.5,-3.5 z" />
+    <path
+        android:fillColor="#F4F5F7"
+        android:pathData="M48.5,50.5 h20 a3.5,3.5 0 0,1 3.5,3.5 a3.5,3.5 0 0,1 -3.5,3.5 h-20 a3.5,3.5 0 0,1 -3.5,-3.5 a3.5,3.5 0 0,1 3.5,-3.5 z" />
+    <path
+        android:fillColor="#F4F5F7"
+        android:pathData="M59.5,63 h9 a3.5,3.5 0 0,1 3.5,3.5 a3.5,3.5 0 0,1 -3.5,3.5 h-9 a3.5,3.5 0 0,1 -3.5,-3.5 a3.5,3.5 0 0,1 3.5,-3.5 z" />
+</vector>

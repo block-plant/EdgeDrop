@@ -20,6 +20,8 @@ rm -rf "${APPDIR}"
 mkdir -p "${APPDIR}/usr/bin"
 mkdir -p "${APPDIR}/usr/share/applications"
 mkdir -p "${APPDIR}/usr/share/icons/hicolor/scalable/apps"
+mkdir -p "${APPDIR}/usr/share/icons/hicolor/512x512/apps"
+mkdir -p "${APPDIR}/usr/share/icons/hicolor/256x256/apps"
 
 # 1. Copy binary
 cp "${BUILD_DIR}/edgedrop" "${APPDIR}/usr/bin/"
@@ -27,8 +29,13 @@ chmod +x "${APPDIR}/usr/bin/edgedrop"
 
 # 2. Copy desktop file and icons
 cp "${SCRIPT_DIR}/EdgeDrop.desktop" "${APPDIR}/usr/share/applications/"
-cp "${SCRIPT_DIR}/edgedrop.svg" "${APPDIR}/usr/share/icons/hicolor/scalable/apps/"
-cp "${SCRIPT_DIR}/edgedrop.svg" "${APPDIR}/edgedrop.svg"
+cp "${PROJECT_ROOT}/assets/icons/EdgeDrop-512.png" "${APPDIR}/usr/share/icons/hicolor/512x512/apps/edgedrop.png"
+cp "${PROJECT_ROOT}/assets/icons/EdgeDrop-256.png" "${APPDIR}/usr/share/icons/hicolor/256x256/apps/edgedrop.png"
+cp "${PROJECT_ROOT}/assets/icons/EdgeDrop-512.png" "${APPDIR}/edgedrop.png"
+cp "${PROJECT_ROOT}/assets/icons/EdgeDrop-512.png" "${APPDIR}/.DirIcon"
+if [ -f "${SCRIPT_DIR}/edgedrop.svg" ]; then
+    cp "${SCRIPT_DIR}/edgedrop.svg" "${APPDIR}/usr/share/icons/hicolor/scalable/apps/"
+fi
 cp "${SCRIPT_DIR}/EdgeDrop.desktop" "${APPDIR}/"
 
 # 3. Download linuxdeploy if not present
@@ -54,7 +61,7 @@ OUTPUT_APPIMAGE="${DIST_DIR}/EdgeDrop-Linux-x86_64.AppImage"
 "${LINUXDEPLOY_BIN}" \
     --appdir "${APPDIR}" \
     --desktop-file "${SCRIPT_DIR}/EdgeDrop.desktop" \
-    --icon-file "${SCRIPT_DIR}/edgedrop.svg" \
+    --icon-file "${PROJECT_ROOT}/assets/icons/EdgeDrop-512.png" \
     --plugin qt \
     --output appimage
 

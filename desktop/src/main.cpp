@@ -34,6 +34,7 @@ int main(int argc, char *argv[]) {
   QApplication::setApplicationVersion("3.0.0");
 
   QApplication app(argc, argv);
+  app.setWindowIcon(QIcon(QStringLiteral(":/qt/qml/EdgeDrop/resources/icons/app_icon.png")));
 
   // Single-instance guard via QLocalServer with authenticated token
   const QString serverName = QStringLiteral("EdgeDropSingleInstanceServer");

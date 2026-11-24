@@ -239,6 +239,7 @@ if(EDGEDROP_BUILD_DESKTOP)
     )
 
     if(WIN32)
+        target_sources(edgedrop PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/desktop/resources/edgedrop.rc")
         set_target_properties(edgedrop PROPERTIES
             OUTPUT_NAME "EdgeDrop"
             WIN32_EXECUTABLE TRUE
@@ -281,6 +282,7 @@ if(EDGEDROP_BUILD_DESKTOP)
             resources/icons/document.svg
             resources/icons/drag_handle.svg
             resources/icons/quit.svg
+            resources/icons/app_icon.png
     )
 
     target_link_libraries(edgedrop PRIVATE
@@ -302,9 +304,14 @@ if(EDGEDROP_BUILD_DESKTOP)
 
     if(APPLE)
         target_link_options(edgedrop PRIVATE "-Wl,-dead_strip_dylibs")
+        set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/EdgeDrop.icns"
+            PROPERTIES MACOSX_PACKAGE_LOCATION "Resources"
+        )
+        target_sources(edgedrop PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/assets/icons/EdgeDrop.icns")
         set_target_properties(edgedrop PROPERTIES
             MACOSX_BUNDLE YES
             MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/resources/Info.plist"
+            MACOSX_BUNDLE_ICON_FILE "EdgeDrop.icns"
         )
     endif()
 endif()

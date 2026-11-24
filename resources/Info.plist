@@ -16,6 +16,8 @@
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0.0</string>
+    <key>CFBundleIconFile</key>
+    <string>EdgeDrop.icns</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSHighResolutionCapable</key>

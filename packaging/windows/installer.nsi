@@ -21,6 +21,8 @@ ShowInstDetails show
 ShowUnInstDetails show
 
 !define MUI_ABORTWARNING
+!define MUI_ICON "..\..\assets\icons\EdgeDrop.ico"
+!define MUI_UNICON "..\..\assets\icons\EdgeDrop.ico"
 
 ; Welcome Page with Friendly-Formal SmartScreen Notice
 !define MUI_WELCOMEPAGE_TITLE "Welcome to EdgeDrop"
