@@ -1,6 +1,6 @@
 # EdgeDrop
 
-> **Minimalist, zero-trust offline file compression at your screen edge.**
+> **Zero-trust offline file compression at your screen edge.**
 
 EdgeDrop is a native, privacy-first desktop utility for **macOS**, **Windows**, and **Linux** built with pure **C++20** and **Qt 6 Quick**. It lives as a discreet, floating pill docked against your display edge. When you drag a file toward the border—or click the handle—a card glides open, compresses your file locally in milliseconds with exact target-size control, and lets you drag the finished file directly into your browser or workflow without touching the cloud.
 
